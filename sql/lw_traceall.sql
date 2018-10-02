@@ -44,7 +44,7 @@ AS $lw_traceall$
                 RAISE NOTICE 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
                 timer := clock_timestamp();
                 perform lw_redirect(lw_schema,looprec.lw_id::int);
-                perform lw_tracesource(lw_schema, looprec.lw_id::int, 50000);
+                perform lw_tracesource(lw_schema, looprec.lw_id::int);
 		RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
   END LOOP;
 

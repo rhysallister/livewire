@@ -25,7 +25,7 @@ BEGIN
     qrytxt := $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
 		case when st_equals(n.g,st_startpoint(l.g)) then 
                 'GOOD' ELSE 'FLIP' END stat
-		from %1$I.nodes n,%1$I.lines l
+		from %1$I.__nodes n,%1$I.__lines l
 		where 
 		st_3dintersects(n.g,l.g)
 		and n.lw_id = %2$s 
@@ -37,7 +37,7 @@ BEGIN
     qrytxt := format(
                 $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
 		case when st_3ddwithin(n.g,st_startpoint(l.g),%1$s) then 'GOOD' ELSE 'FLIP' END stat
-		from %%1$I.nodes n,%%1$I.lines l
+		from %%1$I.__nodes n,%%1$I.__lines l
 		where 
 		st_3ddwithin(n.g,l.g,%1$s)
 		and n.lw_id = %%2$s 
@@ -53,7 +53,7 @@ BEGIN
   for looprec in EXECUTE(format(qrytxt,lw_schema,source,visitedl,visitedn)) LOOP
 --  		RAISE NOTICE '%', looprec; 
 	if looprec.stat = 'FLIP' THEN
-	  updtxt := $$UPDATE %1$I.lines
+	  updtxt := $$UPDATE %1$I.__lines
                         set g = st_reverse(g),
                         source = %2$s,
                         target = %3$s
@@ -76,7 +76,7 @@ BEGIN
 --	raise notice '%', format('SELECT lw_redirect_(%1$L,%2$s,%3$L,%4$L)',  
 --		lw_schema,source,visitedl,visitedn);
 
-	execute format('SELECT lw_redirect_(%1$L,%2$s,%3$L,%4$L)', 
+	execute format('SELECT lw_redirect(%1$L,%2$s,%3$L,%4$L)', 
 			lw_schema,source,visitedl,visitedn);
 
 END LOOP;

@@ -3,12 +3,10 @@ DATA = livewire--0.2.0.sql
 
 release: 
 	cat sql/*.sql > livewire--0.2.0.sql
-
-
 test:
-	pg_prove --verbose --pset tuples_only=1 $(TESTS)
+	pg_prove --verbose --dbname zamblatta --pset tuples_only=1  $(TESTS)
 
-cleantest:
+cleanup:
 	rm -f -r tests/results
 	rm -f tests/regression.diffs
 	rm -f tests/regression.out

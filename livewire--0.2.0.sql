@@ -42,6 +42,31 @@ BEGIN
 
 END;
 $lw_addnodeparticipant$ LANGUAGE plpgsql;
+/*    Returns an array of lw_ids that correspond to endnodes    */
+
+CREATE OR REPLACE FUNCTION lw_endnodes(
+    in lw_schema text,
+    out myarray bigint[]
+  ) AS 
+
+$lw_endnodes$
+DECLARE
+  qrytxt text; 
+BEGIN
+  -- Find all end nodes in a given livewire
+  
+  qrytxt := 'select array_agg(lw_id) from
+		(select source lw_id from 
+		(select lw_id, source from %1$I.__lines 
+		union 
+		select lw_id, target from %1$I.__lines ) as lines
+		group by source  
+		having count(lw_id) = 1) as lw_ids';
+  
+  execute format(qrytxt,lw_schema) into myarray;
+
+END;
+$lw_endnodes$ LANGUAGE 'plpgsql';
 /*	Populate the network tables. 		*/
 
 CREATE OR REPLACE FUNCTION lw_generate(
@@ -535,7 +560,7 @@ BEGIN
     qrytxt := $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
 		case when st_equals(n.g,st_startpoint(l.g)) then 
                 'GOOD' ELSE 'FLIP' END stat
-		from %1$I.nodes n,%1$I.lines l
+		from %1$I.__nodes n,%1$I.__lines l
 		where 
 		st_3dintersects(n.g,l.g)
 		and n.lw_id = %2$s 
@@ -547,7 +572,7 @@ BEGIN
     qrytxt := format(
                 $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
 		case when st_3ddwithin(n.g,st_startpoint(l.g),%1$s) then 'GOOD' ELSE 'FLIP' END stat
-		from %%1$I.nodes n,%%1$I.lines l
+		from %%1$I.__nodes n,%%1$I.__lines l
 		where 
 		st_3ddwithin(n.g,l.g,%1$s)
 		and n.lw_id = %%2$s 
@@ -563,7 +588,7 @@ BEGIN
   for looprec in EXECUTE(format(qrytxt,lw_schema,source,visitedl,visitedn)) LOOP
 --  		RAISE NOTICE '%', looprec; 
 	if looprec.stat = 'FLIP' THEN
-	  updtxt := $$UPDATE %1$I.lines
+	  updtxt := $$UPDATE %1$I.__lines
                         set g = st_reverse(g),
                         source = %2$s,
                         target = %3$s
@@ -586,7 +611,7 @@ BEGIN
 --	raise notice '%', format('SELECT lw_redirect_(%1$L,%2$s,%3$L,%4$L)',  
 --		lw_schema,source,visitedl,visitedn);
 
-	execute format('SELECT lw_redirect_(%1$L,%2$s,%3$L,%4$L)', 
+	execute format('SELECT lw_redirect(%1$L,%2$s,%3$L,%4$L)', 
 			lw_schema,source,visitedl,visitedn);
 
 END LOOP;
@@ -696,7 +721,7 @@ AS $lw_traceall$
                 RAISE NOTICE 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
                 timer := clock_timestamp();
                 perform lw_redirect(lw_schema,looprec.lw_id::int);
-                perform lw_tracesource(lw_schema, looprec.lw_id::int, 50000);
+                perform lw_tracesource(lw_schema, looprec.lw_id::int);
 		RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
   END LOOP;
 
@@ -705,7 +730,7 @@ END;
   
 
 $lw_traceall$;
-/*    Gets the SRID of a livewire enabled schema    */
+/*    Given a source lw_id, trace a feeder and populate __livewire    */
 
 CREATE OR REPLACE FUNCTION lw_tracesource(
     in lw_schema text,
@@ -735,9 +760,9 @@ if checksource = True THEN
   qrytxt := $_$
     select count(*) from pgr_dijkstra(
       $$select lw_id  id, source, target, st_3dlength(g) * multiplier as cost  
-      from %1$I.lines  $$,
+      from %1$I.__lines  $$,
       %2$s, 
-      lw_sourcenodes(lw_schema),
+      lw_sourcenodes(%1$L),
       false
     )
   $_$;
@@ -770,53 +795,6 @@ END IF;
   --raise notice '%', format(qrytxt,lw_schema, source, distance);
   EXECUTE format(qrytxt,lw_schema, source);
 
-
-  /*    Find blocks within 20km of current extent of feeder. Trace from found blocks to source.   */
- /*
-  qrytxt := $_$
-    select array_agg(lw_id) from %1$I.nodes 
-    where status = 'BLOCK' and g && (
-      select st_expand(st_collect(g),2000) 
-      from %1$I.lines where lw_id in (
-        select unnest(edges) from %1$I.livewire where nodes[1] =  %2$s
-        )
-    )
-  $_$;
-
-qrytxt:= $_$
-  select array_agg(lw_id) from (
-  select lw_id from %1$I.nodes
-  where status = 'BLOCK'
-  order by g <-> (
-      select st_collect(g)
-      from %1$I.lines where lw_id in (
-        select unnest(edges) from %1$I.livewire where nodes[1] =  %2$s
-        ))
-    limit 10) as foo$_$;
-
-
-  execute format(qrytxt,lw_schema,source) into closeblocks;
-
-  foreach closeblock in array closeblocks loop
-    qrytxt := $_$
-      INSERT into %1$I.livewire
-      select 
-      array_agg(node order by path_seq) nodes ,
-        array_remove(array_agg(edge order by path_seq),-1::bigint) edges
-      from pgr_dijkstra(
-      $$select lw_id  id, source, target, 
-      st_length(g) * case when %3$s in (source,target) then 1 else multiplier end  as cost  
-        from %1$I.lines
-        $$,
-        array[%2$s]::bigint[],
-        array[%3$s]::bigint[],
-        false
-        )
-        join %1$I.nodes on lw_id = node
-      group by start_vid, end_vid $_$;
-    execute format(qrytxt,lw_schema,source, closeblock);
-  END LOOP;
-*/
 
 
 
