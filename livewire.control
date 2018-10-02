@@ -1,0 +1,6 @@
+# LiveWire  xtension
+comment = 'LiveWire: Power delivery modeling'
+default_version = '0.2.0'
+requires='postgis, pgrouting'
+relocatable = false
+ 
