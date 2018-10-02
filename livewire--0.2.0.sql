@@ -508,7 +508,113 @@ BEGIN
 
 END;
 
-$lw_initialise$ LANGUAGE plpgsql;/*		Gets the SRID of a livewire enabled schema 		*/
+$lw_initialise$ LANGUAGE plpgsql;/*    'redirect' lines based upon their source origin    */
+
+create or replace function lw_redirect(
+  lw_schema text,
+  source bigint,
+  visitedl bigint[] default array[-1]::bigint[],
+  visitedn bigint[] default array[-1]::bigint[]
+  )
+  RETURNS void AS 
+$lw_traceall$
+
+DECLARE
+  qrytxt text;
+  updtxt text;
+  looprec record;
+  timer timestamptz;
+  tolerance float;
+
+BEGIN
+/*    Trace from all blocks to source   */
+  tolerance = lw_tolerance(lw_schema);
+ 
+ IF tolerance = 0 THEN
+    -- tolerance is 0
+    qrytxt := $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
+		case when st_equals(n.g,st_startpoint(l.g)) then 
+                'GOOD' ELSE 'FLIP' END stat
+		from %1$I.nodes n,%1$I.lines l
+		where 
+		st_3dintersects(n.g,l.g)
+		and n.lw_id = %2$s 
+		and not (l.lw_id =ANY (%3$L))
+		and not (n.lw_id =ANY (%4$L)) 
+		and status <> 'BLOCK' $$;
+  ELSE
+    -- tolerance is not 0
+    qrytxt := format(
+                $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
+		case when st_3ddwithin(n.g,st_startpoint(l.g),%1$s) then 'GOOD' ELSE 'FLIP' END stat
+		from %%1$I.nodes n,%%1$I.lines l
+		where 
+		st_3ddwithin(n.g,l.g,%1$s)
+		and n.lw_id = %%2$s 
+		and not (l.lw_id =ANY (%%3$L))
+		and not (n.lw_id =ANY (%%4$L)) 
+		and status <> 'BLOCK' $$, 
+              tolerance);
+
+  
+  END IF;
+  
+  
+  for looprec in EXECUTE(format(qrytxt,lw_schema,source,visitedl,visitedn)) LOOP
+--  		RAISE NOTICE '%', looprec; 
+	if looprec.stat = 'FLIP' THEN
+	  updtxt := $$UPDATE %1$I.lines
+                        set g = st_reverse(g),
+                        source = %2$s,
+                        target = %3$s
+                        where lw_id = %4$s returning *$$;
+
+	--raise notice '%', format(updtxt, lw_schema,looprec.target, looprec.source,looprec.line_id) ;
+		
+	execute  format(updtxt, lw_schema,looprec.target, looprec.source,looprec.line_id) ;
+	visitedl := visitedl || looprec.line_id::bigint;		 
+	visitedn := visitedn || looprec.target::bigint;
+--	raise notice 'visitedl:  %', visitedl;
+--	raise notice 'visitedn:  %', visitedn;
+	source := looprec.source;
+	else
+        visitedl := visitedl || looprec.line_id::bigint;		 
+        visitedn := visitedn || looprec.source::bigint;
+	source := looprec.target;
+	end if;
+
+--	raise notice '%', format('SELECT lw_redirect_(%1$L,%2$s,%3$L,%4$L)',  
+--		lw_schema,source,visitedl,visitedn);
+
+	execute format('SELECT lw_redirect_(%1$L,%2$s,%3$L,%4$L)', 
+			lw_schema,source,visitedl,visitedn);
+
+END LOOP;
+  end;
+  
+
+$lw_traceall$ language plpgsql;
+/*    Returns an array of all SOURCE nodes in a livewire enabled schema    */
+
+CREATE OR REPLACE FUNCTION lw_sourcenodes(
+    in lw_schema text,
+    out myarray bigint[]
+  ) AS 
+$lw_sourcenodes$
+
+DECLARE
+  qrytxt text;
+
+BEGIN 
+  
+  qrytxt := $$select array_agg(lw_id) from %1$I.__nodes
+		where status = 'SOURCE'$$;  
+  execute format(qrytxt,lw_schema) into myarray;
+
+END;
+
+$lw_sourcenodes$  LANGUAGE 'plpgsql';
+/*		Gets the SRID of a livewire enabled schema 		*/
 
 CREATE OR REPLACE FUNCTION lw_srid(
   in lw_schema text,
@@ -544,3 +650,176 @@ BEGIN
 END;
 
 $lw_tolerance$ LANGUAGE plpgsql;
+/*    Initiate trace of all sources   */
+
+CREATE OR REPLACE FUNCTION lw_traceall(
+  lw_schema text
+	)
+    RETURNS void
+    LANGUAGE 'plpgsql'
+
+    COST 100
+    VOLATILE 
+AS $lw_traceall$
+
+  declare
+   
+   looprec record;
+   qrytxt text;
+   timer timestamptz;
+   starttime timestamptz;
+   zerocount bigint;
+  BEGIN
+  starttime := clock_timestamp();
+
+
+  /*    Verify all sources cannot reach each other.... that would be bad   */
+  qrytxt := $_$
+    select count(*) from pgr_dijkstra(
+           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost  
+           from %1$I.__lines  $$,
+           (select lw_sourcenodes('%1$s')), 
+           (select lw_sourcenodes('%1$s')), 
+           false
+           )
+  $_$;
+  EXECUTE format(qrytxt,lw_schema) into zerocount; 
+  if zerocount > 0 THEN
+    raise exception 'One or more sources can reach or one or more sources.';
+  END IF;
+ 
+
+
+  qrytxt := $$ SELECT row_number() over (), count(lw_id) over (), lw_id
+		FROM %I.__nodes where status = 'SOURCE'$$;
+  for looprec in EXECUTE(format(qrytxt, lw_schema)) LOOP
+                RAISE NOTICE 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
+                timer := clock_timestamp();
+                perform lw_redirect(lw_schema,looprec.lw_id::int);
+                perform lw_tracesource(lw_schema, looprec.lw_id::int, 50000);
+		RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
+  END LOOP;
+
+
+END;
+  
+
+$lw_traceall$;
+/*    Gets the SRID of a livewire enabled schema    */
+
+CREATE OR REPLACE FUNCTION lw_tracesource(
+    in lw_schema text,
+    in source bigint,
+    in checksource boolean default true
+  )
+    RETURNS void
+    LANGUAGE 'plpgsql'
+
+    COST 100
+    VOLATILE 
+AS $lw_tracesource$
+
+DECLARE
+  closeblock bigint;
+  closeblocks bigint[];
+  qrytxt text;
+  zerocount bigint;
+
+BEGIN
+
+EXECUTE format('delete from %I.__livewire where nodes[1] = %s',lw_schema,source);
+
+if checksource = True THEN
+
+/*    Verify that this source cannot reach other sources....that would be bad   */
+  qrytxt := $_$
+    select count(*) from pgr_dijkstra(
+      $$select lw_id  id, source, target, st_3dlength(g) * multiplier as cost  
+      from %1$I.lines  $$,
+      %2$s, 
+      lw_sourcenodes(lw_schema),
+      false
+    )
+  $_$;
+  EXECUTE format(qrytxt,lw_schema, source) into zerocount; 
+  IF zerocount > 0 THEN
+    RAISE EXCEPTION 'Zerocount is not zero!!';
+  END IF;
+
+
+END IF;
+ 
+ 
+  
+  /*    Trace from source out to distance  */
+  qrytxt := $_$
+		INSERT into %1$I.__livewire
+        select  
+          array_agg(node order by path_seq) nodes ,
+          array_remove(array_agg(edge order by path_seq),-1::bigint) edges
+        from pgr_dijkstra(
+        	 $$select lw_id  id, source, target, st_3dlength(g) as cost  
+        	 from %1$I.__lines l  $$,
+        	 array[%2$s]::bigint[],
+        	 (select lw_endnodes('%1$s')),
+        	 true
+        	 )
+        join %1$I.__nodes on lw_id = node
+        group by start_vid, end_vid
+  $_$;  
+  --raise notice '%', format(qrytxt,lw_schema, source, distance);
+  EXECUTE format(qrytxt,lw_schema, source);
+
+
+  /*    Find blocks within 20km of current extent of feeder. Trace from found blocks to source.   */
+ /*
+  qrytxt := $_$
+    select array_agg(lw_id) from %1$I.nodes 
+    where status = 'BLOCK' and g && (
+      select st_expand(st_collect(g),2000) 
+      from %1$I.lines where lw_id in (
+        select unnest(edges) from %1$I.livewire where nodes[1] =  %2$s
+        )
+    )
+  $_$;
+
+qrytxt:= $_$
+  select array_agg(lw_id) from (
+  select lw_id from %1$I.nodes
+  where status = 'BLOCK'
+  order by g <-> (
+      select st_collect(g)
+      from %1$I.lines where lw_id in (
+        select unnest(edges) from %1$I.livewire where nodes[1] =  %2$s
+        ))
+    limit 10) as foo$_$;
+
+
+  execute format(qrytxt,lw_schema,source) into closeblocks;
+
+  foreach closeblock in array closeblocks loop
+    qrytxt := $_$
+      INSERT into %1$I.livewire
+      select 
+      array_agg(node order by path_seq) nodes ,
+        array_remove(array_agg(edge order by path_seq),-1::bigint) edges
+      from pgr_dijkstra(
+      $$select lw_id  id, source, target, 
+      st_length(g) * case when %3$s in (source,target) then 1 else multiplier end  as cost  
+        from %1$I.lines
+        $$,
+        array[%2$s]::bigint[],
+        array[%3$s]::bigint[],
+        false
+        )
+        join %1$I.nodes on lw_id = node
+      group by start_vid, end_vid $_$;
+    execute format(qrytxt,lw_schema,source, closeblock);
+  END LOOP;
+*/
+
+
+
+
+END;
+$lw_tracesource$;
