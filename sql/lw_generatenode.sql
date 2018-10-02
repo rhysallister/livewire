@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION lw_generatenode(
     lw_schema text,
     tablename text
   )
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 $lw_generatenode$
 
 DECLARE

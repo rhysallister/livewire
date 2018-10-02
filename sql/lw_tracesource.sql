@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION lw_tracesource(
     in source bigint,
     in checksource boolean default true
   )
-    RETURNS void
+    RETURNS SETOF void
     LANGUAGE 'plpgsql'
 
     COST 100

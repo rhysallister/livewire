@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION lw_addedgeparticipant(
     lw_schema text,
     edgeinfo json
   )
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 
 $lw_addedgeparticipant$
 
@@ -27,7 +27,7 @@ CREATE OR REPLACE FUNCTION lw_addnodeparticipant(
     lw_schema text,
     nodeinfo json
   )
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 $lw_addnodeparticipant$
 
 BEGIN
@@ -72,7 +72,7 @@ $lw_endnodes$ LANGUAGE 'plpgsql';
 CREATE OR REPLACE FUNCTION lw_generate(
 	  lw_schema text
 	)
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 $lw_generate$
 
 DECLARE
@@ -179,7 +179,7 @@ CREATE OR REPLACE FUNCTION lw_generateedge(
     lw_schema text,
     tablename text
   )
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 $lw_addedgeparticipant$
 
 DECLARE
@@ -320,7 +320,7 @@ CREATE OR REPLACE FUNCTION lw_generatenode(
     lw_schema text,
     tablename text
   )
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 $lw_generatenode$
 
 DECLARE
@@ -455,7 +455,7 @@ CREATE OR REPLACE FUNCTION lw_initialise(
   lw_schema text,
   lw_srid integer,
   lw_tolerance float default 0)
-RETURNS void AS 
+RETURNS SETOF void AS 
 
 $lw_initialise$
 
@@ -533,7 +533,8 @@ BEGIN
 
 END;
 
-$lw_initialise$ LANGUAGE plpgsql;/*    'redirect' lines based upon their source origin    */
+$lw_initialise$ LANGUAGE plpgsql;
+/*    'redirect' lines based upon their source origin    */
 
 create or replace function lw_redirect(
   lw_schema text,
@@ -541,7 +542,7 @@ create or replace function lw_redirect(
   visitedl bigint[] default array[-1]::bigint[],
   visitedn bigint[] default array[-1]::bigint[]
   )
-  RETURNS void AS 
+  RETURNS SETOF void AS 
 $lw_traceall$
 
 DECLARE
@@ -680,7 +681,7 @@ $lw_tolerance$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION lw_traceall(
   lw_schema text
 	)
-    RETURNS void
+    RETURNS SETOF void
     LANGUAGE 'plpgsql'
 
     COST 100
@@ -737,7 +738,7 @@ CREATE OR REPLACE FUNCTION lw_tracesource(
     in source bigint,
     in checksource boolean default true
   )
-    RETURNS void
+    RETURNS SETOF void
     LANGUAGE 'plpgsql'
 
     COST 100

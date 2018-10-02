@@ -1,5 +1,4 @@
 \unset ECHO
-
 1..5
 ok 1 - Check for existence of burlap after running lw_initialise
 ok 2 - Check for the existence of burlap.burlap after running lw_initialise

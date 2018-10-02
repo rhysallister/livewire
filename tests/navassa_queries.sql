@@ -1,7 +1,7 @@
-BEGIN;
-select lw_initialise('nn11',3450);
 
-select lw_addedgeparticipant('nn11','{
+select lw_initialise('navassa_shadow',3450);
+
+select lw_addedgeparticipant('navassa_shadow','{
   "schemaname":"navassa",						 
   "tablename": "primary_ag",
   "primarykey":"lineid",
@@ -11,7 +11,7 @@ select lw_addedgeparticipant('nn11','{
   "phasemap":{"ABC":"ABC","AB":"AB","AC":"AC","BC":"BC","A":"A","B":"B","C":"C"}
 }');
 
-select lw_addedgeparticipant('nn11','{
+select lw_addedgeparticipant('navassa_shadow','{
   "schemaname":"navassa",						 
   "tablename": "primary_ug",
   "primarykey":"lineid",
@@ -21,7 +21,7 @@ select lw_addedgeparticipant('nn11','{
   "phasemap":{"ABC":"ABC","AB":"AB","AC":"AC","BC":"BC","A":"A","B":"B","C":"C"}
 }');
 
-select lw_addedgeparticipant('nn11','{
+select lw_addedgeparticipant('navassa_shadow','{
   "schemaname":"navassa",						 
   "tablename": "risers",
   "primarykey":"lineid",
@@ -31,7 +31,7 @@ select lw_addedgeparticipant('nn11','{
   "phasemap":{"ABC":"ABC","AB":"AB","AC":"AC","BC":"BC","A":"A","B":"B","C":"C"}
 }');
 
-select lw_addedgeparticipant('nn11','{
+select lw_addedgeparticipant('navassa_shadow','{
   "schemaname":"navassa",						 
   "tablename": "jumpers",
   "primarykey":"lineid",
@@ -41,7 +41,7 @@ select lw_addedgeparticipant('nn11','{
   "phasemap":{"ABC":"ABC","AB":"AB","AC":"AC","BC":"BC","A":"A","B":"B","C":"C"}
 }');
 
-select lw_addnodeparticipant('nn11', $${
+select lw_addnodeparticipant('navassa_shadow', $${
   "schemaname":"navassa",						 
   "tablename": "substation_transformers",
   "primarykey":"device_id",
@@ -53,7 +53,7 @@ select lw_addnodeparticipant('nn11', $${
   "phasemap":{"ABC":"ABC","AB":"AB","AC":"AC","BC":"BC","A":"A","B":"B","C":"C"}
     }$$);
 	
-select lw_addnodeparticipant('nn11', $${
+select lw_addnodeparticipant('navassa_shadow', $${
   "schemaname":"navassa",						 
   "tablename": "isolating_devices",
   "primarykey":"device_id",
@@ -65,7 +65,7 @@ select lw_addnodeparticipant('nn11', $${
   "phasemap":{"ABC":"ABC","AB":"AB","AC":"AC","BC":"BC","A":"A","B":"B","C":"C"}
     }$$);
 
-select lw_addnodeparticipant('nn11', $${
+select lw_addnodeparticipant('navassa_shadow', $${
   "schemaname":"navassa",						 
   "tablename": "transformer_devices",
   "primarykey":"device_id",
@@ -77,6 +77,6 @@ select lw_addnodeparticipant('nn11', $${
   "phasemap":{"ABC":"ABC","AB":"AB","AC":"AC","BC":"BC","A":"A","B":"B","C":"C"}
     }$$);
 
-select lw_generate('nn11');
+select lw_generate('navassa_shadow');
 
-commit;
+

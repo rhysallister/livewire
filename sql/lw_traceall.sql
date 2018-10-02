@@ -3,7 +3,7 @@
 CREATE OR REPLACE FUNCTION lw_traceall(
   lw_schema text
 	)
-    RETURNS void
+    RETURNS SETOF void
     LANGUAGE 'plpgsql'
 
     COST 100

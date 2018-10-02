@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION lw_addnodeparticipant(
     lw_schema text,
     nodeinfo json
   )
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 $lw_addnodeparticipant$
 
 BEGIN

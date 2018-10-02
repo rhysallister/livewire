@@ -3,7 +3,7 @@
 CREATE OR REPLACE FUNCTION lw_generate(
 	  lw_schema text
 	)
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 $lw_generate$
 
 DECLARE

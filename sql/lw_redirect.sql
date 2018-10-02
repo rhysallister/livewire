@@ -6,7 +6,7 @@ create or replace function lw_redirect(
   visitedl bigint[] default array[-1]::bigint[],
   visitedn bigint[] default array[-1]::bigint[]
   )
-  RETURNS void AS 
+  RETURNS SETOF void AS 
 $lw_traceall$
 
 DECLARE

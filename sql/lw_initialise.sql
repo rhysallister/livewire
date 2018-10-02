@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION lw_initialise(
   lw_schema text,
   lw_srid integer,
   lw_tolerance float default 0)
-RETURNS void AS 
+RETURNS SETOF void AS 
 
 $lw_initialise$
 

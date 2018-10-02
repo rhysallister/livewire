@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION lw_addedgeparticipant(
     lw_schema text,
     edgeinfo json
   )
-    RETURNS void AS 
+    RETURNS SETOF void AS 
 
 $lw_addedgeparticipant$
 
