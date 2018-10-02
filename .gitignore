@@ -1,4 +1,5 @@
 *.directory
+tests/results/
 tests/regression.diffs
 tests/regression.out
 *.swp

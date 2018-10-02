@@ -1,0 +1,10 @@
+\unset ECHO
+1..8
+ok 1 - Check for lw_initialise
+ok 2 - Check for lw_addedgeparticipant
+ok 3 - Check for lw_addnodeparticipant
+ok 4 - Check for lw_generatedege
+ok 5 - Check for lw_generatenode
+ok 6 - Check for lw_generate
+ok 7 - Check for lw_srid
+ok 8 - Check for lw_tolerance

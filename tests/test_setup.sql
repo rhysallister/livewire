@@ -16,4 +16,4 @@ BEGIN;
  CREATE EXTENSION IF NOT EXISTS pgrouting;
  CREATE EXTENSION IF NOT EXISTS livewire;
  RESET client_min_messages;
-\i pgtap.sql
+\i tests/pgtap.sql
