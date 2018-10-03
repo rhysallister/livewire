@@ -1,15 +1,21 @@
 \unset ECHO
-1..13
-ok 1 - Check for lw_initialise
-ok 2 - Check for lw_addedgeparticipant
-ok 3 - Check for lw_addnodeparticipant
-ok 4 - Check for lw_generatedege
-ok 5 - Check for lw_generatenode
-ok 6 - Check for lw_generate
-ok 7 - Check for lw_srid
-ok 8 - Check for lw_tolerance
-ok 9 - Check for lw_redirect
-ok 10 - Check for lw_endnodes
-ok 11 - Check for lw_sourcenodes
-ok 12 - Check for lw_traceall
-ok 13 - Check for lw_tracesource
+1..19
+ok 1 - Check for lw_addedgeparticipant
+ok 2 - Check for lw_addnodeparticipant
+ok 3 - Check for lw_edgedelete
+ok 4 - Check for lw_edgeinsert
+ok 5 - Check for lw_edgeupdate
+ok 6 - Check for lw_endnodes
+ok 7 - Check for lw_generatedege
+ok 8 - Check for lw_generatenode
+ok 9 - Check for lw_generate
+ok 10 - Check for lw_initialise
+ok 11 - Check for lw_nodedelete
+ok 12 - Check for lw_nodeinsert
+ok 13 - Check for lw_nodeupdate
+ok 14 - Check for lw_redirect
+ok 15 - Check for lw_sourcenodes
+ok 16 - Check for lw_srid
+ok 17 - Check for lw_tolerance
+ok 18 - Check for lw_traceall
+ok 19 - Check for lw_tracesource

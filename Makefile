@@ -10,6 +10,7 @@ cleanup:
 	rm -f -r tests/results
 	rm -f tests/regression.diffs
 	rm -f tests/regression.out
+	dropdb $(CONTRIB_TESTDB)
 
 TESTS = $(wildcard tests/sql/*.sql)
 

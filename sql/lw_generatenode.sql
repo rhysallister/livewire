@@ -126,7 +126,19 @@ BEGIN
   lw_schema, qrytxt
   );
 
+ /*	Triggers to keep base tables in sync with origin tables		*/
 
+  triginfo := '{
+    "node_update": "lw_nodeupdate()",
+    "node_delete": "lw_nodedelete()",
+    "node_insert": "lw_nodeinsert()"}';
+
+
+  FOR looprec in  select * from json_each_text(triginfo) LOOP
+    qrytxt := $$ CREATE TRIGGER %3$I BEFORE UPDATE ON %1$I.%2$I
+      FOR EACH ROW EXECUTE PROCEDURE %4$s $$;
+    EXECUTE format(qrytxt, ni->>'schemaname',ni->>'tablename',looprec.key, looprec.value);
+  END LOOP;
 
 
 

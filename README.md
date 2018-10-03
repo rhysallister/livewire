@@ -1,4 +1,4 @@
-# Livewire: Sane power delivery modelling.
+# Livewire: Power delivery modeling. In your database.
 
 
 ## What is LiveWire?
@@ -8,40 +8,29 @@ LiveWire is a postgresql extension that makes managing electrical distribution d
 ## Requirements and Dependencies
 
 - Postgresql 10
-- Postgres PGXS extension
-- Postgres Postgis extension
-
-### Setup dependencies
-
-#### Installing Postgres PGXS
-```shell
-sudo apt-get install postgresql-server-dev-all
-sudo apt-get install postgresql-common
-```
-
-#### Installing Gdal and Postgis
-```
-sudo apt-get install postgresql-server-dev-all -y
-sudo apt-get install postgresql-common -y
-sudo apt-get install postgresql-10-postgis-2.4 -y
-sudo apt-get install postgresql-10-postgis-scripts -y
-sudo apt-get install postgis -y
-sudo apt-get install postgresql-10-pgrouting -y
-```
+- postgis 2.4
+- pgrouting 2.6
 
 ## Installation
 
 Clone this repository.
 Run:
+
 ``` shell
-make && sudo make install
+make && sudo make install 
 ```
+You may also want to run:
+
+``` shell
+make installcheck
+```
+
 
 In the database that you want to enable LiveWire in run as a db superuser:
 
 ``` SQL
 CREATE EXTENSION postgis;
-CREATE EXTENSION postgis_topology;
+CREATE EXTENSION pgrouting;
 CREATE EXTENSION livewire;
 ```
 ## Usage
@@ -49,7 +38,7 @@ CREATE EXTENSION livewire;
 LiveWire groups common data together in a schema. For LiveWire to be effective the data must be connected. Functions and views are provided that will indicate suspect data.
 
 
-```
+``` SQL
 lw_initialise(lw_name text, srid int)
 ```
 

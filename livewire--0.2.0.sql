@@ -42,6 +42,54 @@ BEGIN
 
 END;
 $lw_addnodeparticipant$ LANGUAGE plpgsql;
+CREATE FUNCTION lw_edgedelete()  RETURNS trigger AS 
+
+$lw_edgedelete$
+
+
+  DECLARE
+
+
+  BEGIN
+    RAISE NOTICE '%', format('%I.%I',TG_TABLE_SCHEMA, TG_TABLE_NAME); 
+    RAISE NOTICE '-------------------------------------------------';
+    RAISE NOTICE '%', row_to_json((NEW.*)); 
+    RAISE NOTICE '%', row_to_json((OLD.*)); 
+    RETURN NEW;
+  END;
+$lw_edgedelete$ LANGUAGE plpgsql;
+CREATE FUNCTION lw_edgeinsert()  RETURNS trigger AS 
+
+$lw_edgeinsert$
+
+
+  DECLARE
+
+
+  BEGIN
+    RAISE NOTICE '%', format('%I.%I',TG_TABLE_SCHEMA, TG_TABLE_NAME); 
+    RAISE NOTICE '-------------------------------------------------';
+    RAISE NOTICE '%', row_to_json((NEW.*)); 
+    RAISE NOTICE '%', row_to_json((OLD.*)); 
+    RETURN NEW;
+  END;
+$lw_edgeinsert$ LANGUAGE plpgsql;
+CREATE FUNCTION lw_edgeupdate()  RETURNS trigger AS 
+
+$lw_edgeupdate$
+
+
+  DECLARE
+
+
+  BEGIN
+    RAISE NOTICE '%', format('%I.%I',TG_TABLE_SCHEMA, TG_TABLE_NAME); 
+    RAISE NOTICE '-------------------------------------------------';
+    RAISE NOTICE '%', row_to_json((NEW.*)); 
+    RAISE NOTICE '%', row_to_json((OLD.*)); 
+    RETURN NEW;
+  END;
+$lw_edgeupdate$ LANGUAGE plpgsql;
 /*    Returns an array of lw_ids that correspond to endnodes    */
 
 CREATE OR REPLACE FUNCTION lw_endnodes(
@@ -534,6 +582,54 @@ BEGIN
 END;
 
 $lw_initialise$ LANGUAGE plpgsql;
+CREATE FUNCTION lw_nodedelete()  RETURNS trigger AS 
+
+$lw_nodedelete$
+
+
+  DECLARE
+
+
+  BEGIN
+    RAISE NOTICE '%', format('%I.%I',TG_TABLE_SCHEMA, TG_TABLE_NAME); 
+    RAISE NOTICE '-------------------------------------------------';
+    RAISE NOTICE '%', row_to_json((NEW.*)); 
+    RAISE NOTICE '%', row_to_json((OLD.*)); 
+    RETURN NEW;
+  END;
+$lw_nodedelete$ LANGUAGE plpgsql;
+CREATE FUNCTION lw_nodeinsert()  RETURNS trigger AS 
+
+$lw_nodeinsert$
+
+
+  DECLARE
+
+
+  BEGIN
+    RAISE NOTICE '%', format('%I.%I',TG_TABLE_SCHEMA, TG_TABLE_NAME); 
+    RAISE NOTICE '-------------------------------------------------';
+    RAISE NOTICE '%', row_to_json((NEW.*)); 
+    RAISE NOTICE '%', row_to_json((OLD.*)); 
+    RETURN NEW;
+  END;
+$lw_nodeinsert$ LANGUAGE plpgsql;
+CREATE FUNCTION lw_nodeupdate()  RETURNS trigger AS 
+
+$lw_nodemodify$
+
+
+  DECLARE
+
+
+  BEGIN
+    RAISE NOTICE '%', format('%I.%I',TG_TABLE_SCHEMA, TG_TABLE_NAME); 
+    RAISE NOTICE '-------------------------------------------------';
+    RAISE NOTICE '%', row_to_json((NEW.*)); 
+    RAISE NOTICE '%', row_to_json((OLD.*)); 
+    RETURN NEW;
+  END;
+$lw_nodemodify$ LANGUAGE plpgsql;
 /*    'redirect' lines based upon their source origin    */
 
 create or replace function lw_redirect(
