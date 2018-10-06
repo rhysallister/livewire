@@ -79,4 +79,4 @@ select lw_addnodeparticipant('navassa_shadow', $${
 
 select lw_generate('navassa_shadow');
 
-
+select lw_traceall('navassa_shadow');

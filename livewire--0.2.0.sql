@@ -360,6 +360,23 @@ EXECUTE format(
   lw_schema,qrytxt
   );
 
+
+/*    Triggers to keep base tables in sync with origin tables         */
+
+  triginfo := '{
+    "edge_update": "lw_edgeupdate()",
+    "edge_delete": "lw_edgedelete()",
+    "edge_insert": "lw_edgeinsert()"}';
+
+
+  FOR looprec in  select * from json_each_text(triginfo) LOOP
+    qrytxt := $$ CREATE TRIGGER %3$I BEFORE UPDATE ON %1$I.%2$I
+      FOR EACH ROW EXECUTE PROCEDURE %4$s $$;
+    EXECUTE format(qrytxt, ei->>'schemaname',ei->>'tablename',looprec.key, looprec.value);
+  END LOOP;
+
+
+
 END;
 $lw_addedgeparticipant$ LANGUAGE plpgsql;
 /*    Populate node tables	 */
@@ -490,7 +507,19 @@ BEGIN
   lw_schema, qrytxt
   );
 
+ /*	Triggers to keep base tables in sync with origin tables		*/
 
+  triginfo := '{
+    "node_update": "lw_nodeupdate()",
+    "node_delete": "lw_nodedelete()",
+    "node_insert": "lw_nodeinsert()"}';
+
+
+  FOR looprec in  select * from json_each_text(triginfo) LOOP
+    qrytxt := $$ CREATE TRIGGER %3$I BEFORE UPDATE ON %1$I.%2$I
+      FOR EACH ROW EXECUTE PROCEDURE %4$s $$;
+    EXECUTE format(qrytxt, ni->>'schemaname',ni->>'tablename',looprec.key, looprec.value);
+  END LOOP;
 
 
 
@@ -655,7 +684,7 @@ BEGIN
  IF tolerance = 0 THEN
     -- tolerance is 0
     qrytxt := $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
-		case when st_equals(n.g,st_startpoint(l.g)) then 
+		case when st_3dintersects(n.g,st_startpoint(l.g)) then 
                 'GOOD' ELSE 'FLIP' END stat
 		from %1$I.__nodes n,%1$I.__lines l
 		where 
@@ -827,6 +856,25 @@ END;
   
 
 $lw_traceall$;
+CREATE FUNCTION lw_tracednstream(
+  in lw_schema text,
+  in lw_id bigint,
+  out g geometry) as
+
+$lw_tracednstream$
+  DECLARE
+    qrytxt text;
+
+  BEGIN
+    qrytxt := 'SELECT st_union(g) g FROM %1$I.__lines WHERE lw_id IN
+                (SELECT distinct(unnest(edges[(array_position(
+                  nodes::int[], %2$s)):])) FROM %1$I.__livewire 
+              WHERE %2$s =ANY (nodes))';
+    EXECUTE format(qrytxt, lw_schema, lw_id) INTO g;
+
+  END;
+
+$lw_tracednstream$ LANGUAGE plpgsql;
 /*    Given a source lw_id, trace a feeder and populate __livewire    */
 
 CREATE OR REPLACE FUNCTION lw_tracesource(
@@ -898,3 +946,22 @@ END IF;
 
 END;
 $lw_tracesource$;
+CREATE FUNCTION lw_traceupstream(
+  in lw_schema text,
+  in lw_id bigint,
+  out g geometry) as
+
+$lw_traceupstream$
+  DECLARE
+    qrytxt text;
+
+  BEGIN
+    qrytxt := 'SELECT st_union(g) g FROM %1$I.__lines WHERE lw_id IN
+                (SELECT distinct(unnest(edges[:(array_position(
+                  nodes::int[], %2$s)-1)])) FROM %1$I.__livewire 
+              WHERE %2$s =ANY (nodes))';
+    EXECUTE format(qrytxt, lw_schema, lw_id) INTO g;
+
+  END;
+
+$lw_traceupstream$ LANGUAGE plpgsql;

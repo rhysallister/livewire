@@ -23,7 +23,7 @@ BEGIN
  IF tolerance = 0 THEN
     -- tolerance is 0
     qrytxt := $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
-		case when st_equals(n.g,st_startpoint(l.g)) then 
+		case when st_3dintersects(n.g,st_startpoint(l.g)) then 
                 'GOOD' ELSE 'FLIP' END stat
 		from %1$I.__nodes n,%1$I.__lines l
 		where 

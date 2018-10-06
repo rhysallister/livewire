@@ -9,7 +9,7 @@ Test Suite for LiveWire
 *******************************************************/
 
 
-SELECT plan(19);
+SELECT plan(21);
 
 SELECT has_function('lw_addedgeparticipant', ARRAY['text', 'json'], 'Check for lw_addedgeparticipant');
 SELECT has_function('lw_addnodeparticipant', ARRAY['text', 'json'], 'Check for lw_addnodeparticipant');
@@ -29,7 +29,9 @@ SELECT has_function('lw_sourcenodes', ARRAY['text'], 'Check for lw_sourcenodes')
 SELECT has_function('lw_srid', ARRAY['text'], 'Check for lw_srid');
 SELECT has_function('lw_tolerance', ARRAY['text'], 'Check for lw_tolerance');
 SELECT has_function('lw_traceall', ARRAY['text'], 'Check for lw_traceall');
+SELECT has_function('lw_tracednstream', ARRAY['text','bigint'], 'Check for lw_tracednstream');
 SELECT has_function('lw_tracesource', ARRAY['text', 'bigint','boolean'], 'Check for lw_tracesource');
+SELECT has_function('lw_traceupstream', ARRAY['text','bigint'], 'Check for lw_traceupstream');
 SELECT * FROM finish();
 
 ROLLBACK;
