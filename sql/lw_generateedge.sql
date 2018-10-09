@@ -139,7 +139,7 @@ EXECUTE format(
 
 
 /*    Triggers to keep base tables in sync with origin tables         */
-
+/*
   triginfo := '{
     "edge_update": "lw_edgeupdate()",
     "edge_delete": "lw_edgedelete()",
@@ -152,7 +152,7 @@ EXECUTE format(
     EXECUTE format(qrytxt, ei->>'schemaname',ei->>'tablename',looprec.key, looprec.value);
   END LOOP;
 
-
+*/
 
 END;
 $lw_addedgeparticipant$ LANGUAGE plpgsql;

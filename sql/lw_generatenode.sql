@@ -127,7 +127,7 @@ BEGIN
   );
 
  /*	Triggers to keep base tables in sync with origin tables		*/
-
+ /*
   triginfo := '{
     "node_update": "lw_nodeupdate()",
     "node_delete": "lw_nodedelete()",
@@ -140,7 +140,7 @@ BEGIN
     EXECUTE format(qrytxt, ni->>'schemaname',ni->>'tablename',looprec.key, looprec.value);
   END LOOP;
 
-
+*/
 
 
 END;
