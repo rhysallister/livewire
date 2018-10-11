@@ -31,11 +31,13 @@ AS $lw_traceall$
            false
            )
   $_$;
+  RAISE NOTICE 'Verify single source directive';
+  timer := clock_timestamp();
   EXECUTE format(qrytxt,lw_schema) into zerocount; 
   if zerocount > 0 THEN
     raise exception 'One or more sources can reach or one or more sources.';
   END IF;
- 
+   RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
 
 
   qrytxt := $$ SELECT row_number() over (), count(lw_id) over (), lw_id
@@ -44,7 +46,7 @@ AS $lw_traceall$
                 RAISE NOTICE 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
                 timer := clock_timestamp();
                 perform lw_redirect(lw_schema,looprec.lw_id::int);
-                perform lw_tracesource(lw_schema, looprec.lw_id::int);
+                perform lw_tracesource(lw_schema, looprec.lw_id::int, False);
 		RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
   END LOOP;
 

@@ -10,6 +10,7 @@ DECLARE
   looprec record;
   srid int;
   tolerance float;
+  qrytxt text;
   
 BEGIN
 	
@@ -101,6 +102,20 @@ BEGIN
     lw_schema, tolerance);
  END IF; 
 	
+ 
+ EXECUTE format(
+  'SELECT  count(*)  from %1$I.__lines  WHERE source = target',
+  lw_schema
+ ) INTO looprec;
+ IF looprec.count > 1 THEN
+   qrytxt := 'SELECT lw_table, lw_table_pkid, st_length(g) FROM %1$I.__lines where source = target';
+  RAISE NOTICE 'The follwing rows are probably below the tolerance threshold:'; 
+  FOR looprec in EXECUTE format(qrytxt, lw_schema) LOOP
+     RAISE NOTICE 'Primary Key % in table %.', looprec.lw_table_pkid, looprec.lw_table;
+  END LOOP;
+  RAISE EXCEPTION 'Fix the data and rerun lw_generate.';
+END IF;
+
 
 END;
 $lw_generate$ LANGUAGE plpgsql;

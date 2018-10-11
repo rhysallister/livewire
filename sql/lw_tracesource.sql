@@ -21,8 +21,8 @@ DECLARE
 BEGIN
 
 EXECUTE format('delete from %I.__livewire where nodes[1] = %s',lw_schema,source);
-
 if checksource = True THEN
+ RAISE NOTICE 'ALLCHECK';
 
 /*    Verify that this source cannot reach other sources....that would be bad   */
   qrytxt := $_$
