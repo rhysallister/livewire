@@ -9,7 +9,7 @@ Test Suite for LiveWire
 *******************************************************/
 
 
-SELECT plan(23);
+SELECT plan(25);
 
 SELECT has_function('lw_addedgeparticipant', ARRAY['text', 'json'], 'Check for lw_addedgeparticipant');
 SELECT has_function('lw_addnodeparticipant', ARRAY['text', 'json'], 'Check for lw_addnodeparticipant');
@@ -24,7 +24,9 @@ SELECT has_function('lw_initialise', ARRAY['text', 'integer', 'double precision'
 SELECT has_function('lw_nodedelete', 'Check for lw_nodedelete');
 SELECT has_function('lw_nodeinsert', 'Check for lw_nodeinsert');
 SELECT has_function('lw_nodeupdate', 'Check for lw_nodeupdate');
-SELECT has_function('lw_redirect', ARRAY['text', 'bigint','bigint[]', 'bigint[]'], 'Check for lw_redirect');
+SELECT has_function('lw_redirect', ARRAY['text', 'bigint'], 'Check for lw_redirect');
+SELECT has_function('lw_singlesource', ARRAY['text'], 'Check for lw_singlesource');
+SELECT has_function('lw_singlesource', ARRAY['text', 'bigint'], 'Check for lw_singlesource - Single source variant');
 SELECT has_function('lw_sourcenodes', ARRAY['text'], 'Check for lw_sourcenodes');
 SELECT has_function('lw_srid', ARRAY['text'], 'Check for lw_srid');
 SELECT has_function('lw_tolerance', ARRAY['text'], 'Check for lw_tolerance');

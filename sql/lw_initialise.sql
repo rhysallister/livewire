@@ -83,3 +83,6 @@ BEGIN
 END;
 
 $lw_initialise$ LANGUAGE plpgsql;
+
+
+COMMENT ON FUNCTION lw_initialise IS 'lw_initialise: Livewire funcytion to instantiate a new livewire';

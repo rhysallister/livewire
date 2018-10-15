@@ -626,6 +626,9 @@ BEGIN
 END;
 
 $lw_initialise$ LANGUAGE plpgsql;
+
+
+COMMENT ON FUNCTION lw_initialise IS 'lw_initialise: Livewire funcytion to instantiate a new livewire';
 CREATE FUNCTION lw_nodedelete()  RETURNS trigger AS 
 
 $lw_nodedelete$
@@ -819,6 +822,82 @@ END LOOP;
   
 
 $lw_traceall$ language plpgsql; */
+CREATE OR REPLACE FUNCTION lw_singlesource(
+  IN lw_schema text,
+  OUT truth boolean
+        )
+   
+AS $lw_singlesource$
+
+  DECLARE
+
+   qrytxt text;
+   zerocount bigint; 
+  BEGIN
+
+
+  /*    Verify all sources cannot reach each other.... that would be bad   */
+  qrytxt := $_$
+    select count(*) from pgr_dijkstra(
+           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost
+           from %1$I.__lines  $$,
+           (select lw_sourcenodes('%1$s')),
+           (select lw_sourcenodes('%1$s')),
+           false
+           )
+  $_$;
+  EXECUTE format(qrytxt,lw_schema) into zerocount;
+  IF zerocount > 0 THEN
+    truth = False;
+  ELSE
+    truth = True;
+  END IF;
+
+
+END;
+
+
+$lw_singlesource$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION lw_singlesource(
+  IN lw_schema text,
+  IN lw_id bigint,
+  OUT truth boolean
+        )
+   
+AS $lw_singlesource$
+
+  DECLARE
+
+   qrytxt text;
+   zerocount bigint; 
+  BEGIN
+
+
+  /*    Verify all sources cannot reach each other.... that would be bad   */
+  qrytxt := $_$
+    select count(*) from pgr_dijkstra(
+           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost
+           from %1$I.__lines  $$,
+           '%2$s',
+           (select lw_sourcenodes('%1$s')),
+           false
+           )
+  $_$;
+  EXECUTE format(qrytxt,lw_schema, lw_id) into zerocount;
+  IF zerocount > 0 THEN
+    truth = False;
+  ELSE
+    truth = True;
+  END IF;
+
+
+END;
+
+
+$lw_singlesource$ LANGUAGE plpgsql;
+
+
 /*    Returns an array of all SOURCE nodes in a livewire enabled schema    */
 
 CREATE OR REPLACE FUNCTION lw_sourcenodes(
@@ -880,12 +959,9 @@ $lw_tolerance$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION lw_traceall(
   lw_schema text
 	)
-    RETURNS SETOF void
-    LANGUAGE 'plpgsql'
+    RETURNS SETOF void AS 
 
-    COST 100
-    VOLATILE 
-AS $lw_traceall$
+$lw_traceall$
 
   declare
    
@@ -893,29 +969,22 @@ AS $lw_traceall$
    qrytxt text;
    timer timestamptz;
    starttime timestamptz;
+   singlesource boolean;
    zerocount bigint;
   BEGIN
   starttime := clock_timestamp();
 
 
-  /*    Verify all sources cannot reach each other.... that would be bad   */
-  qrytxt := $_$
-    select count(*) from pgr_dijkstra(
-           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost  
-           from %1$I.__lines  $$,
-           (select lw_sourcenodes('%1$s')), 
-           (select lw_sourcenodes('%1$s')), 
-           false
-           )
-  $_$;
-  RAISE NOTICE 'Verify single source directive';
-  timer := clock_timestamp();
-  EXECUTE format(qrytxt,lw_schema) into zerocount; 
-  if zerocount > 0 THEN
-    raise exception 'One or more sources can reach or one or more sources.';
-  END IF;
-   RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
+  
 
+  /*    Verify all sources cannot reach each other.... that would be bad   */
+  
+  RAISE NOTICE 'Verify single source directive';
+  EXECUTE 'SELECT lw_singlesource($1)' INTO singlesource USING lw_schema;
+  IF NOT singlesource THEN
+   RAISE EXCEPTION 'One or more sources can reach one or more sources';
+  END IF;
+    
 
   qrytxt := $$ SELECT row_number() over (), count(lw_id) over (), lw_id
 		FROM %I.__nodes where status = 'SOURCE'$$;
@@ -931,7 +1000,7 @@ AS $lw_traceall$
 END;
   
 
-$lw_traceall$;
+$lw_traceall$ LANGUAGE plpgsql;
 CREATE FUNCTION lw_tracednstream(
   in lw_schema text,
   in lw_id bigint,
@@ -1067,6 +1136,7 @@ AS $lw_tracesource$
 DECLARE
   closeblock bigint;
   closeblocks bigint[];
+  singlesource boolean;
   qrytxt text;
   zerocount bigint;
 
@@ -1076,19 +1146,10 @@ EXECUTE format('delete from %I.__livewire where nodes[1] = %s',lw_schema,source)
 if checksource = True THEN
  RAISE NOTICE 'ALLCHECK';
 
-/*    Verify that this source cannot reach other sources....that would be bad   */
-  qrytxt := $_$
-    select count(*) from pgr_dijkstra(
-      $$select lw_id  id, source, target, st_3dlength(g) * multiplier as cost  
-      from %1$I.__lines  $$,
-      %2$s, 
-      lw_sourcenodes(%1$L),
-      false
-    )
-  $_$;
-  EXECUTE format(qrytxt,lw_schema, source) into zerocount; 
-  IF zerocount > 0 THEN
-    RAISE EXCEPTION 'Zerocount is not zero!!';
+RAISE NOTICE 'Verify single source directive';
+  EXECUTE 'SELECT lw_singlesource($1, $2)' INTO singlesource USING lw_schema, source;
+  IF NOT singlesource THEN
+   RAISE EXCEPTION 'One or more sources can reach one or more sources';
   END IF;
 
 

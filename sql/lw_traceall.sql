@@ -3,12 +3,9 @@
 CREATE OR REPLACE FUNCTION lw_traceall(
   lw_schema text
 	)
-    RETURNS SETOF void
-    LANGUAGE 'plpgsql'
+    RETURNS SETOF void AS 
 
-    COST 100
-    VOLATILE 
-AS $lw_traceall$
+$lw_traceall$
 
   declare
    
@@ -16,29 +13,22 @@ AS $lw_traceall$
    qrytxt text;
    timer timestamptz;
    starttime timestamptz;
+   singlesource boolean;
    zerocount bigint;
   BEGIN
   starttime := clock_timestamp();
 
 
-  /*    Verify all sources cannot reach each other.... that would be bad   */
-  qrytxt := $_$
-    select count(*) from pgr_dijkstra(
-           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost  
-           from %1$I.__lines  $$,
-           (select lw_sourcenodes('%1$s')), 
-           (select lw_sourcenodes('%1$s')), 
-           false
-           )
-  $_$;
-  RAISE NOTICE 'Verify single source directive';
-  timer := clock_timestamp();
-  EXECUTE format(qrytxt,lw_schema) into zerocount; 
-  if zerocount > 0 THEN
-    raise exception 'One or more sources can reach or one or more sources.';
-  END IF;
-   RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
+  
 
+  /*    Verify all sources cannot reach each other.... that would be bad   */
+  
+  RAISE NOTICE 'Verify single source directive';
+  EXECUTE 'SELECT lw_singlesource($1)' INTO singlesource USING lw_schema;
+  IF NOT singlesource THEN
+   RAISE EXCEPTION 'One or more sources can reach one or more sources';
+  END IF;
+    
 
   qrytxt := $$ SELECT row_number() over (), count(lw_id) over (), lw_id
 		FROM %I.__nodes where status = 'SOURCE'$$;
@@ -54,4 +44,4 @@ AS $lw_traceall$
 END;
   
 
-$lw_traceall$;
+$lw_traceall$ LANGUAGE plpgsql;

@@ -15,6 +15,7 @@ AS $lw_tracesource$
 DECLARE
   closeblock bigint;
   closeblocks bigint[];
+  singlesource boolean;
   qrytxt text;
   zerocount bigint;
 
@@ -24,19 +25,10 @@ EXECUTE format('delete from %I.__livewire where nodes[1] = %s',lw_schema,source)
 if checksource = True THEN
  RAISE NOTICE 'ALLCHECK';
 
-/*    Verify that this source cannot reach other sources....that would be bad   */
-  qrytxt := $_$
-    select count(*) from pgr_dijkstra(
-      $$select lw_id  id, source, target, st_3dlength(g) * multiplier as cost  
-      from %1$I.__lines  $$,
-      %2$s, 
-      lw_sourcenodes(%1$L),
-      false
-    )
-  $_$;
-  EXECUTE format(qrytxt,lw_schema, source) into zerocount; 
-  IF zerocount > 0 THEN
-    RAISE EXCEPTION 'Zerocount is not zero!!';
+RAISE NOTICE 'Verify single source directive';
+  EXECUTE 'SELECT lw_singlesource($1, $2)' INTO singlesource USING lw_schema, source;
+  IF NOT singlesource THEN
+   RAISE EXCEPTION 'One or more sources can reach one or more sources';
   END IF;
 
 

@@ -1,5 +1,5 @@
 \unset ECHO
-1..23
+1..25
 ok 1 - Check for lw_addedgeparticipant
 ok 2 - Check for lw_addnodeparticipant
 ok 3 - Check for lw_edgedelete
@@ -14,12 +14,14 @@ ok 11 - Check for lw_nodedelete
 ok 12 - Check for lw_nodeinsert
 ok 13 - Check for lw_nodeupdate
 ok 14 - Check for lw_redirect
-ok 15 - Check for lw_sourcenodes
-ok 16 - Check for lw_srid
-ok 17 - Check for lw_tolerance
-ok 18 - Check for lw_traceall
-ok 19 - Check for lw_tracednstream - Single source variant
-ok 20 - Check for lw_tracednstream - Multiple source variant
-ok 21 - Check for lw_tracednstream - Multiple source and blockers variant
-ok 22 - Check for lw_tracesource
-ok 23 - Check for lw_traceupstream
+ok 15 - Check for lw_singlesource
+ok 16 - Check for lw_singlesource - Single source variant
+ok 17 - Check for lw_sourcenodes
+ok 18 - Check for lw_srid
+ok 19 - Check for lw_tolerance
+ok 20 - Check for lw_traceall
+ok 21 - Check for lw_tracednstream - Single source variant
+ok 22 - Check for lw_tracednstream - Multiple source variant
+ok 23 - Check for lw_tracednstream - Multiple source and blockers variant
+ok 24 - Check for lw_tracesource
+ok 25 - Check for lw_traceupstream

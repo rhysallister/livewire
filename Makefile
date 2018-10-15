@@ -12,6 +12,8 @@ cleanup:
 	rm -f tests/regression.out
 	dropdb $(CONTRIB_TESTDB)
 
+clean: cleanup
+
 TESTS = $(wildcard tests/sql/*.sql)
 
 REGRESS = $(patsubst tests/sql/%.sql,%,$(TESTS))
