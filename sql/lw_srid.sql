@@ -1,18 +1,21 @@
 /*		Gets the SRID of a livewire enabled schema 		*/
 
 CREATE OR REPLACE FUNCTION lw_srid(
-  in lw_schema text,
-  out lw_srid bigint
-  ) as 
+  IN lw_schema text,
+  OUT lw_srid bigint
+  ) AS
   
 $lw_srid$
 
 BEGIN
 
   EXECUTE format($$ SELECT (tableconfig->>'lw_srid')::bigint
-    from %1$I.%1$I where tabletype = 'config' $$, lw_schema)
+    FROM %1$I.%1$I WHERE tabletype = 'config' $$, lw_schema)
     into lw_srid;
 
 END;
 
 $lw_srid$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_srid(text) is 
+  'Returns the SRID of a given lw_schema';

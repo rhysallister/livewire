@@ -11,14 +11,13 @@ AS $lw_singlesource$
    zerocount bigint; 
   BEGIN
 
-
   /*    Verify all sources cannot reach each other.... that would be bad   */
   qrytxt := $_$
-    select count(*) from pgr_dijkstra(
-           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost
-           from %1$I.__lines  $$,
-           (select lw_sourcenodes('%1$s')),
-           (select lw_sourcenodes('%1$s')),
+    SELECT count(*) FROM pgr_dijkstra(
+           $$SELECT lw_id  id, source, target, st_3dlength(g) * multiplier   as cost
+           FROM %1$I.__lines  $$,
+           (SELECT lw_sourcenodes('%1$s')),
+           (SELECT lw_sourcenodes('%1$s')),
            false
            )
   $_$;
@@ -29,11 +28,12 @@ AS $lw_singlesource$
     truth = True;
   END IF;
 
-
 END;
 
-
 $lw_singlesource$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_singlesource(text) is 
+  'Given an lw_schema determine if any sourcenode can reach any other sourcenode';
 
 CREATE OR REPLACE FUNCTION lw_singlesource(
   IN lw_schema text,
@@ -52,11 +52,11 @@ AS $lw_singlesource$
 
   /*    Verify all sources cannot reach each other.... that would be bad   */
   qrytxt := $_$
-    select count(*) from pgr_dijkstra(
-           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost
-           from %1$I.__lines  $$,
+    SELECT count(*) FROM pgr_dijkstra(
+           $$SELECT lw_id  id, source, target, st_3dlength(g) * multiplier AS cost
+           FROM %1$I.__lines  $$,
            '%2$s',
-           (select lw_sourcenodes('%1$s')),
+           (SELECT lw_sourcenodes('%1$s')),
            false
            )
   $_$;
@@ -70,7 +70,7 @@ AS $lw_singlesource$
 
 END;
 
-
 $lw_singlesource$ LANGUAGE plpgsql;
 
-
+COMMENT ON FUNCTION lw_singlesource(text, bigint) is 
+  'Given an lw_schema and an lw_id determine if lw_id can reach more than one source';

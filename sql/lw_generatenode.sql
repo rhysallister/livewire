@@ -20,21 +20,21 @@ BEGIN
   
   /*    Get table config data   */
   EXECUTE format(
-    'select tableconfig from %1$I.%1$I where tablename = %2$L',
+    'SELECT tableconfig FROM %1$I.%1$I WHERE tablename = %2$L',
     lw_schema,tablename
   ) into ni; 
   
   /*    check that table exists   */
-  PERFORM * from pg_catalog.pg_class pc
+  PERFORM * FROM pg_catalog.pg_class pc
     JOIN pg_catalog.pg_namespace pn on pc.relnamespace=pn.oid
-    where nspname = ni->>'schemaname'
+    WHERE nspname = ni->>'schemaname'
     and relname = ni->>'tablename';
   IF NOT FOUND THEN
     RAISE '% not found in system catalogs', ni->>'tablename';
   END IF;
   
   /*    check that table has a geometry column    */
-  PERFORM * from pg_catalog.pg_attribute pa
+  PERFORM * FROM pg_catalog.pg_attribute pa
     JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
     JOIN pg_catalog.pg_class on attrelid = oid
     JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
@@ -45,7 +45,7 @@ BEGIN
   END IF;
 
   /*    check that phase column exists    */
-  PERFORM * from pg_catalog.pg_attribute pa
+  PERFORM * FROM pg_catalog.pg_attribute pa
     JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
     JOIN pg_catalog.pg_class pc on attrelid = pc.oid
     JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
@@ -56,16 +56,16 @@ BEGIN
   END IF;
 
   /*    Check that config info has the correct phase keys   */
-  PERFORM count(*) from json_each_text(ni->'phasemap')
-    where key in ('ABC','AB','AC','BC','A','B','C') and value is not null
-    except select 7;
+  PERFORM count(*) FROM json_each_text(ni->'phasemap')
+    WHERE key in ('ABC','AB','AC','BC','A','B','C') and value is not null
+    except SELECT 7;
   IF FOUND THEN
     RAISE 'phase column mapping not accurate';
   END IF;
 
   /*    Check that unique column is unique    */
   EXECUTE format(
-    'SELECT %3$I from %1$I.%2$I group by %3$I having count(%3$I) > 1',
+    'SELECT %3$I FROM %1$I.%2$I group by %3$I having count(%3$I) > 1',
     ni->>'schemaname', ni->>'tablename', ni->>'primarykey'
   );
   GET DIAGNOSTICS diaginfo = ROW_COUNT;
@@ -75,7 +75,7 @@ BEGIN
 
   /*    Check that geometry column has no duplicates    */
   EXECUTE format(
-    'SELECT st_astext(%3$I) from %1$I.%2$I group by %3$I
+    'SELECT st_astext(%3$I) FROM %1$I.%2$I group by %3$I
     having count(st_astext(%3$I)) > 1',
     ni->>'schemaname', ni->>'tablename', ni->>'geomcolumn'
   );
@@ -86,7 +86,7 @@ BEGIN
 
   qrytxt := format($qrytxt$ 
     with one as (
-      select 
+      SELECT 
         %3$I pk, 
         CASE 
           WHEN %5$I = %6$L THEN 'ABC'
@@ -103,18 +103,18 @@ BEGIN
           ELSE 'DEVICE' 
         END status,
         %4$I geom 
-      from %1$I.%2$I
+      FROM %1$I.%2$I
    ),
    two as (
-     select 
+     SELECT 
        pk, 
        phase, 
        status,
        st_force3d(st_setsrid(geom,%13$L))::geometry(POINTZ,%13$L) geom 
-    from one)
-  select 
-    '%1$I.%2$I' lw_table, pk lw_table_pkid, status, phase, geom from two 
-  where geom is not null
+    FROM one)
+  SELECT 
+    '%1$I.%2$I' lw_table, pk lw_table_pkid, status, phase, geom FROM two 
+  WHERE geom is not null
   $qrytxt$,
   ni->>'schemaname', ni->>'tablename', ni->>'primarykey', ni->>'geomcolumn',
   ni->>'phasecolumn', ni->'phasemap'->>'ABC', ni->'phasemap'->>'AB', 
@@ -134,7 +134,7 @@ BEGIN
     "node_insert": "lw_nodeinsert()"}';
 
 
-  FOR looprec in  select * from json_each_text(triginfo) LOOP
+  FOR looprec in  SELECT * FROM json_each_text(triginfo) LOOP
     qrytxt := $$ CREATE TRIGGER %3$I BEFORE UPDATE ON %1$I.%2$I
       FOR EACH ROW EXECUTE PROCEDURE %4$s $$;
     EXECUTE format(qrytxt, ni->>'schemaname',ni->>'tablename',looprec.key, looprec.value);
@@ -145,3 +145,5 @@ BEGIN
 
 END;
 $lw_generatenode$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_generatenode is '';

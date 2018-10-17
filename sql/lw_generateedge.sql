@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION lw_generateedge(
     tablename text
   )
     RETURNS SETOF void AS 
-$lw_addedgeparticipant$
+$lw_generateedge$
 
 DECLARE
   diaginfo bigint;
@@ -146,7 +146,7 @@ EXECUTE format(
     "edge_insert": "lw_edgeinsert()"}';
 
 
-  FOR looprec in  select * from json_each_text(triginfo) LOOP
+  FOR looprec in  SELECT * FROM json_each_text(triginfo) LOOP
     qrytxt := $$ CREATE TRIGGER %3$I BEFORE UPDATE ON %1$I.%2$I
       FOR EACH ROW EXECUTE PROCEDURE %4$s $$;
     EXECUTE format(qrytxt, ei->>'schemaname',ei->>'tablename',looprec.key, looprec.value);
@@ -155,4 +155,6 @@ EXECUTE format(
 */
 
 END;
-$lw_addedgeparticipant$ LANGUAGE plpgsql;
+$lw_generateedge$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_generateedge IS '';

@@ -74,7 +74,7 @@ BEGIN
   EXECUTE format($$ CREATE INDEX ON %1$I.__lines USING gist (g) $$,lw_schema);
   EXECUTE format($$ CREATE INDEX ON %1$I.__nodes USING gist (g) $$,lw_schema);
   EXECUTE format($$ CREATE UNIQUE INDEX ON %1$I.%1$I (tabletype) 
-    where tabletype = 'config' $$,lw_schema); 
+    WHERE tabletype = 'config' $$,lw_schema); 
   
   EXECUTE format($$ INSERT INTO %1$I.%1$I VALUES 
     ('%1$I.%1$I','config', '{"lw_tolerance": "%2$s", "lw_srid" : "%3$s"}'::json) $$,
@@ -85,4 +85,4 @@ END;
 $lw_initialise$ LANGUAGE plpgsql;
 
 
-COMMENT ON FUNCTION lw_initialise IS 'lw_initialise: Livewire funcytion to instantiate a new livewire';
+COMMENT ON FUNCTION lw_initialise IS 'lw_initialise: Livewire function to instantiate a new livewire';

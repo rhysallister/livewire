@@ -8,20 +8,21 @@ CREATE OR REPLACE FUNCTION lw_addedgeparticipant(
 
 $lw_addedgeparticipant$
 
- 
 BEGIN
 
   EXECUTE format(
     $$INSERT INTO %1$I.%1$I (tablename, tabletype, tableconfig) 
-    VALUES ('%2$I.%3$I', 'EDGE', %4$L)$$,
-    lw_schema, edgeinfo->>'schemaname',edgeinfo->>'tablename', edgeinfo);
-
-
-
+      VALUES ('%2$I.%3$I', 'EDGE', %4$L)$$,
+    lw_schema,
+    edgeinfo->>'schemaname',
+    edgeinfo->>'tablename',
+    edgeinfo
+    );
 
 END;
 $lw_addedgeparticipant$ language plpgsql;
-/*	Adds configuration data for a node participant	*/
+
+COMMENT ON FUNCTION lw_addedgeparticipant(text, json) is '';/*	Adds configuration data for a node participant	*/
 
 CREATE OR REPLACE FUNCTION lw_addnodeparticipant(
     lw_schema text,
@@ -42,7 +43,8 @@ BEGIN
 
 END;
 $lw_addnodeparticipant$ LANGUAGE plpgsql;
-CREATE FUNCTION lw_edgedelete()  RETURNS trigger AS 
+
+COMMENT ON FUNCTION lw_addnodeparticipant is '';CREATE FUNCTION lw_edgedelete()  RETURNS trigger AS 
 
 $lw_edgedelete$
 
@@ -58,7 +60,8 @@ $lw_edgedelete$
     RETURN NEW;
   END;
 $lw_edgedelete$ LANGUAGE plpgsql;
-CREATE FUNCTION lw_edgeinsert()  RETURNS trigger AS 
+
+COMMENT ON FUNCTION lw_edgedelete is '';CREATE FUNCTION lw_edgeinsert()  RETURNS trigger AS 
 
 $lw_edgeinsert$
 
@@ -74,7 +77,8 @@ $lw_edgeinsert$
     RETURN NEW;
   END;
 $lw_edgeinsert$ LANGUAGE plpgsql;
-CREATE FUNCTION lw_edgeupdate()  RETURNS trigger AS 
+
+COMMENT ON FUNCTION lw_edgeinsert is '';CREATE FUNCTION lw_edgeupdate()  RETURNS trigger AS 
 
 $lw_edgeupdate$
 
@@ -90,11 +94,12 @@ $lw_edgeupdate$
     RETURN NEW;
   END;
 $lw_edgeupdate$ LANGUAGE plpgsql;
-/*    Returns an array of lw_ids that correspond to endnodes    */
+
+COMMENT ON FUNCTION lw_edgeupdate is '';/*    Returns an array of lw_ids that correspond to endnodes    */
 
 CREATE OR REPLACE FUNCTION lw_endnodes(
-    in lw_schema text,
-    out myarray bigint[]
+  IN lw_schema text,
+  OUT myarray bigint[]
   ) AS 
 
 $lw_endnodes$
@@ -115,7 +120,9 @@ BEGIN
 
 END;
 $lw_endnodes$ LANGUAGE 'plpgsql';
-/*	Populate the network tables. 		*/
+
+
+COMMENT ON FUNCTION lw_endnodes is '';/*	Populate the network tables. 		*/
 
 CREATE OR REPLACE FUNCTION lw_generate(
 	  lw_schema text
@@ -236,14 +243,15 @@ END IF;
 
 END;
 $lw_generate$ LANGUAGE plpgsql;
-/*    Populate edge tables    */
+
+COMMENT ON FUNCTION lw_generate is '';/*    Populate edge tables    */
 
 CREATE OR REPLACE FUNCTION lw_generateedge(
     lw_schema text,
     tablename text
   )
     RETURNS SETOF void AS 
-$lw_addedgeparticipant$
+$lw_generateedge$
 
 DECLARE
   diaginfo bigint;
@@ -393,8 +401,9 @@ EXECUTE format(
 */
 
 END;
-$lw_addedgeparticipant$ LANGUAGE plpgsql;
-/*    Populate node tables	 */
+$lw_generateedge$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_generateedge IS '';/*    Populate node tables	 */
 
 CREATE OR REPLACE FUNCTION lw_generatenode(
     lw_schema text,
@@ -541,7 +550,8 @@ BEGIN
 
 END;
 $lw_generatenode$ LANGUAGE plpgsql;
-/*      Creates schema and livewire base tables      */
+
+COMMENT ON FUNCTION lw_generatenode is '';/*      Creates schema and livewire base tables      */
 
 CREATE OR REPLACE FUNCTION lw_initialise(
   lw_schema text,
@@ -628,7 +638,7 @@ END;
 $lw_initialise$ LANGUAGE plpgsql;
 
 
-COMMENT ON FUNCTION lw_initialise IS 'lw_initialise: Livewire funcytion to instantiate a new livewire';
+COMMENT ON FUNCTION lw_initialise IS 'lw_initialise: Livewire function to instantiate a new livewire';
 CREATE FUNCTION lw_nodedelete()  RETURNS trigger AS 
 
 $lw_nodedelete$
@@ -645,7 +655,8 @@ $lw_nodedelete$
     RETURN NEW;
   END;
 $lw_nodedelete$ LANGUAGE plpgsql;
-CREATE FUNCTION lw_nodeinsert()  RETURNS trigger AS 
+
+COMMENT ON FUNCTION lw_nodedelete is '';CREATE FUNCTION lw_nodeinsert()  RETURNS trigger AS 
 
 $lw_nodeinsert$
 
@@ -661,7 +672,8 @@ $lw_nodeinsert$
     RETURN NEW;
   END;
 $lw_nodeinsert$ LANGUAGE plpgsql;
-CREATE FUNCTION lw_nodeupdate()  RETURNS trigger AS 
+
+COMMENT ON FUNCTION lw_nodeinsert is '';CREATE FUNCTION lw_nodeupdate()  RETURNS trigger AS 
 
 $lw_nodemodify$
 
@@ -677,6 +689,8 @@ $lw_nodemodify$
     RETURN NEW;
   END;
 $lw_nodemodify$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_nodeupdate is '';
 /*    'redirect' lines based upon their source origin    */
 
 CREATE OR REPLACE FUNCTION lw_redirect(
@@ -729,100 +743,7 @@ BEGIN
 
 $lw_redirect$ language plpgsql;
 
-
-
-
-
-
-
-
-/*    'redirect' lines based upon their source origin    */
-
-/*create or replace function lw_redirect(
-  lw_schema text,
-  source bigint,
-  visitedl bigint[] default array[-1]::bigint[],
-  visitedn bigint[] default array[-1]::bigint[]
-  )
-  RETURNS SETOF void AS 
-$lw_traceall$
-
-DECLARE
-  qrytxt text;
-  updtxt text;
-  looprec record;
-  timer timestamptz;
-  tolerance float;
-
-BEGIN
-/*    Trace from all blocks to source   */
-  tolerance = lw_tolerance(lw_schema);
- 
- IF tolerance = 0 THEN
-    -- tolerance is 0
-    qrytxt := $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
-		case when st_3dintersects(n.g,st_startpoint(l.g)) then 
-                'GOOD' ELSE 'FLIP' END stat
-		from %1$I.__nodes n,%1$I.__lines l
-		where 
-		st_3dintersects(n.g,l.g)
-		and n.lw_id = %2$s 
-		and not (l.lw_id =ANY (%3$L))
-		and not (n.lw_id =ANY (%4$L)) 
-		and status <> 'BLOCK' $$;
-  ELSE
-    -- tolerance is not 0
-    qrytxt := format(
-                $$SELECT n.lw_id node_id, l.lw_id line_id, source, target, 
-		case when st_3ddwithin(n.g,st_startpoint(l.g),%1$s) then 'GOOD' ELSE 'FLIP' END stat
-		from %%1$I.__nodes n,%%1$I.__lines l
-		where 
-		st_3ddwithin(n.g,l.g,%1$s)
-		and n.lw_id = %%2$s 
-		and not (l.lw_id =ANY (%%3$L))
-		and not (n.lw_id =ANY (%%4$L)) 
-		and status <> 'BLOCK' $$, 
-              tolerance);
-
-  
-  END IF;
-  
-  
-  for looprec in EXECUTE(format(qrytxt,lw_schema,source,visitedl,visitedn)) LOOP
---  		RAISE NOTICE '%', looprec; 
-	if looprec.stat = 'FLIP' THEN
-	  updtxt := $$UPDATE %1$I.__lines
-                        set g = st_reverse(g),
-                        source = %2$s,
-                        target = %3$s
-                        where lw_id = %4$s returning *$$;
-
-	--raise notice '%', format(updtxt, lw_schema,looprec.target, looprec.source,looprec.line_id) ;
-		
-	execute  format(updtxt, lw_schema,looprec.target, looprec.source,looprec.line_id) ;
-	visitedl := visitedl || looprec.line_id::bigint;		 
-	visitedn := visitedn || looprec.target::bigint;
---	raise notice 'visitedl:  %', visitedl;
---	raise notice 'visitedn:  %', visitedn;
-	source := looprec.source;
-	else
-        visitedl := visitedl || looprec.line_id::bigint;		 
-        visitedn := visitedn || looprec.source::bigint;
-	source := looprec.target;
-	end if;
-
---	raise notice '%', format('SELECT lw_redirect_(%1$L,%2$s,%3$L,%4$L)',  
---		lw_schema,source,visitedl,visitedn);
-
-	execute format('SELECT lw_redirect(%1$L,%2$s,%3$L,%4$L)', 
-			lw_schema,source,visitedl,visitedn);
-
-END LOOP;
-  end;
-  
-
-$lw_traceall$ language plpgsql; */
-CREATE OR REPLACE FUNCTION lw_singlesource(
+COMMENT ON FUNCTION lw_redirect is '';CREATE OR REPLACE FUNCTION lw_singlesource(
   IN lw_schema text,
   OUT truth boolean
         )
@@ -858,6 +779,8 @@ END;
 
 
 $lw_singlesource$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_singlesource(text) is '';
 
 CREATE OR REPLACE FUNCTION lw_singlesource(
   IN lw_schema text,
@@ -898,10 +821,11 @@ END;
 $lw_singlesource$ LANGUAGE plpgsql;
 
 
+COMMENT ON FUNCTION lw_singlesource(text, bigint) is '';
 /*    Returns an array of all SOURCE nodes in a livewire enabled schema    */
 
 CREATE OR REPLACE FUNCTION lw_sourcenodes(
-    in lw_schema text,
+  IN lw_schema text,
     out myarray bigint[]
   ) AS 
 $lw_sourcenodes$
@@ -918,10 +842,11 @@ BEGIN
 END;
 
 $lw_sourcenodes$  LANGUAGE 'plpgsql';
-/*		Gets the SRID of a livewire enabled schema 		*/
+
+COMMENT ON FUNCTION lw_sourcenodes(text) is '';/*		Gets the SRID of a livewire enabled schema 		*/
 
 CREATE OR REPLACE FUNCTION lw_srid(
-  in lw_schema text,
+  IN lw_schema text,
   out lw_srid bigint
   ) as 
   
@@ -936,10 +861,12 @@ BEGIN
 END;
 
 $lw_srid$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_srid(text) is '';
 /*		Gets the tolerance of a livewire enabled schema 		*/
 
 CREATE OR REPLACE FUNCTION lw_tolerance(
-  in lw_schema text,
+  IN lw_schema text,
   out lw_tolerance float
   ) as 
   
@@ -954,6 +881,9 @@ BEGIN
 END;
 
 $lw_tolerance$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_tolerance(IN lw_schema text) is 'Returns the tolerance set for a given livewire.';
+
 /*    Initiate trace of all sources   */
 
 CREATE OR REPLACE FUNCTION lw_traceall(
@@ -1001,9 +931,10 @@ END;
   
 
 $lw_traceall$ LANGUAGE plpgsql;
-CREATE FUNCTION lw_tracednstream(
-  in lw_schema text,
-  in lw_id bigint,
+
+COMMENT ON FUNCTION lw_traceall(in lw_schema text) is '';CREATE FUNCTION lw_tracednstream(
+  IN lw_schema text,
+  IN lw_id bigint,
   out g geometry) as
 
 $lw_tracednstream$
@@ -1021,10 +952,13 @@ $lw_tracednstream$
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_id bigint) is 
+  'Returns geometric trace give a livewire name and an lw_id form __nodes.';
+
 
 CREATE FUNCTION lw_tracednstream(
-  in lw_schema text,
-  in lw_ids bigint[],
+  IN lw_schema text,
+  IN lw_ids bigint[],
   out g geometry) as
 
 $lw_tracednstream$
@@ -1055,11 +989,14 @@ $lw_tracednstream$
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) is 
+  'Returns geometric trace give a livewire name and a set of lw_ids from __nodes.';
+
 
 CREATE FUNCTION lw_tracednstream(
-  in lw_schema text,
-  in lw_ids bigint[],
-  in bl_ids bigint[],
+  IN lw_schema text,
+  IN lw_ids bigint[],
+  IN bl_ids bigint[],
   out g geometry) as
 
 $lw_tracednstream$
@@ -1101,9 +1038,14 @@ $lw_tracednstream$
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[], in bw_ids bigint[]) is 
+  'Returns geometric trace given a livewire name, a set of lw_ids as origins and a set of bl_ids as points to stop the trace
+  from the __nodes table.';
+
+
 CREATE FUNCTION lw_tracednstream(
-  in lw_schema text,
-  in in_g geometry,
+  IN lw_schema text,
+  IN in_g geometry,
   out g geometry) as
 
 $lw_tracednstream$
@@ -1119,12 +1061,14 @@ $lw_tracednstream$
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in in_g geometry) is 
+  'Returns geometric trace give a livewire name and a geometry.';
 /*    Given a source lw_id, trace a feeder and populate __livewire    */
 
 CREATE OR REPLACE FUNCTION lw_tracesource(
-    in lw_schema text,
-    in source bigint,
-    in checksource boolean default true
+  IN lw_schema text,
+  IN source bigint,
+  IN checksource boolean default true
   )
     RETURNS SETOF void
     LANGUAGE 'plpgsql'
@@ -1182,9 +1126,11 @@ END IF;
 
 END;
 $lw_tracesource$;
-CREATE FUNCTION lw_traceupstream(
-  in lw_schema text,
-  in lw_id bigint,
+
+COMMENT ON FUNCTION lw_tracesource(in lw_schema text, in source bigint, in truth boolean) is 
+  'Returns geometric trace give a livewire name and a set of lw_ids from __nodes.';CREATE FUNCTION lw_traceupstream(
+  IN lw_schema text,
+  IN lw_id bigint,
   out g geometry) as
 
 $lw_traceupstream$
@@ -1201,3 +1147,6 @@ $lw_traceupstream$
   END;
 
 $lw_traceupstream$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) is 
+  'Returns an upstream geometric trace given a livewire name a lw_id from __nodes.';

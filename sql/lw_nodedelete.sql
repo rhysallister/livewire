@@ -14,3 +14,6 @@ $lw_nodedelete$
     RETURN NEW;
   END;
 $lw_nodedelete$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_nodedelete is 
+  'Trigger function to fire for a delete on any node particpant';

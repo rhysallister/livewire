@@ -18,8 +18,11 @@ TESTS = $(wildcard tests/sql/*.sql)
 
 REGRESS = $(patsubst tests/sql/%.sql,%,$(TESTS))
 
-REGRESS_OPTS = --inputdir=tests --outputdir=tests --load-language plpgsql \
-	--load-extension=postgis --load-extension=pgrouting \
+REGRESS_OPTS = --inputdir=tests \
+	--outputdir=tests \
+	--load-language plpgsql \
+	--load-extension=postgis \
+	--load-extension=pgrouting \
 	--load-extension=livewire	
 
 # Postgres build stuff

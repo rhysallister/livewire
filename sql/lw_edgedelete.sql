@@ -2,7 +2,6 @@ CREATE FUNCTION lw_edgedelete()  RETURNS trigger AS
 
 $lw_edgedelete$
 
-
   DECLARE
 
 
@@ -14,3 +13,6 @@ $lw_edgedelete$
     RETURN NEW;
   END;
 $lw_edgedelete$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_edgedelete IS
+  'Trigger function to fire for a delete on any edge particpant';

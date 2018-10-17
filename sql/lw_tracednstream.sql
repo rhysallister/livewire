@@ -1,7 +1,7 @@
 CREATE FUNCTION lw_tracednstream(
-  in lw_schema text,
-  in lw_id bigint,
-  out g geometry) as
+  IN lw_schema text,
+  IN lw_id bigint,
+  OUT g geometry) AS
 
 $lw_tracednstream$
   DECLARE
@@ -18,12 +18,14 @@ $lw_tracednstream$
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_id bigint) IS
+  'Returns geometric trace give a livewire name and an lw_id form __nodes.';
+
 
 CREATE FUNCTION lw_tracednstream(
-  in lw_schema text,
-  in lw_ids bigint[],
-  out g geometry) as
-
+  IN lw_schema text,
+  IN lw_ids bigint[],
+  out g geometry) AS
 $lw_tracednstream$
   DECLARE
     rec record;
@@ -33,7 +35,7 @@ $lw_tracednstream$
 
     qrytxt := 'CREATE TEMPORARY TABLE __ ON COMMIT DROP AS 
                SELECT  *, null::bigint[] ne FROM %1$I.__livewire 
-               where %2$L && nodes';
+               WHERE %2$L && nodes';
     EXECUTE format(qrytxt, lw_schema, lw_ids); 
 
 
@@ -45,20 +47,22 @@ $lw_tracednstream$
         ELSE edges[(array_position(nodes::bigint[], z)):] end;
     END LOOP;
     
-    qrytxt := 'SELECT st_union(g) from %1$I.__lines WHERE lw_id IN
-               (select distinct unnest(ne) FROM __)';
+    qrytxt := 'SELECT st_union(g) FROM %1$I.__lines WHERE lw_id IN
+               (SELECT distinct unnest(ne) FROM __)';
     EXECUTE format(qrytxt, lw_schema) into g;
   END;
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) IS
+  'Returns geometric trace give a livewire name and a set of lw_ids FROM __nodes.';
+
 
 CREATE FUNCTION lw_tracednstream(
-  in lw_schema text,
-  in lw_ids bigint[],
-  in bl_ids bigint[],
-  out g geometry) as
-
+  IN lw_schema text,
+  IN lw_ids bigint[],
+  IN bl_ids bigint[],
+  out g geometry) AS
 $lw_tracednstream$
   DECLARE
     rec record;
@@ -90,19 +94,23 @@ $lw_tracednstream$
         ELSE e[:(array_position(n::bigint[], z)) - 1] end;
     END LOOP;
     
-    qrytxt := 'SELECT st_union(g) from %1$I.__lines WHERE lw_id IN
-               (select distinct unnest(e) FROM __)';
+    qrytxt := 'SELECT st_union(g) FROM %1$I.__lines WHERE lw_id IN
+               (SELECT distinct unnest(e) FROM __)';
     EXECUTE format(qrytxt, lw_schema) into g;
   END;
 
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
-CREATE FUNCTION lw_tracednstream(
-  in lw_schema text,
-  in in_g geometry,
-  out g geometry) as
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[], in bw_ids bigint[]) IS
+  'Returns geometric trace given a livewire name, a set of lw_ids as origins and a set of bl_ids as points to stop the trace
+  FROM the __nodes table.';
 
+
+CREATE FUNCTION lw_tracednstream(
+  IN lw_schema text,
+  IN in_g geometry,
+  out g geometry) AS
 $lw_tracednstream$
   DECLARE
     qrytxt text;
@@ -116,3 +124,5 @@ $lw_tracednstream$
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in in_g geometry) IS
+  'Returns geometric trace give a livewire name and a geometry.';

@@ -1,5 +1,5 @@
 \unset ECHO
-\i tests/test_setup.sql
+\i tests/tests.sql
 
 /*******************************************************
 

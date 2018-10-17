@@ -1,9 +1,9 @@
 /*    Given a source lw_id, trace a feeder and populate __livewire    */
 
 CREATE OR REPLACE FUNCTION lw_tracesource(
-    in lw_schema text,
-    in source bigint,
-    in checksource boolean default true
+  IN lw_schema text,
+  IN source bigint,
+  IN checksource boolean default true
   )
     RETURNS SETOF void
     LANGUAGE 'plpgsql'
@@ -21,8 +21,8 @@ DECLARE
 
 BEGIN
 
-EXECUTE format('delete from %I.__livewire where nodes[1] = %s',lw_schema,source);
-if checksource = True THEN
+EXECUTE format('delete FROM %I.__livewire WHERE nodes[1] = %s',lw_schema,source);
+IF checksource = True THEN
  RAISE NOTICE 'ALLCHECK';
 
 RAISE NOTICE 'Verify single source directive';
@@ -36,21 +36,21 @@ END IF;
  
  
   
-  /*    Trace from source out to distance  */
+  /*    Trace FROM source out to distance  */
   qrytxt := $_$
 		INSERT into %1$I.__livewire
-        select  
+        SELECT  
           array_agg(node order by path_seq) nodes ,
-          array_remove(array_agg(edge order by path_seq),-1::bigint) edges
-        from pgr_dijkstra(
-        	 $$select lw_id  id, source, target, st_3dlength(g) as cost  
-        	 from %1$I.__lines l  $$,
+          array_remove(array_agg(edge ORDER BY path_seq),-1::bigint) edges
+        FROM pgr_dijkstra(
+        	 $$SELECT lw_id  id, source, target, st_3dlength(g) AS cost  
+        	 FROM %1$I.__lines l  $$,
         	 array[%2$s]::bigint[],
-        	 (select lw_endnodes('%1$s')),
+        	 (SELECT lw_endnodes('%1$s')),
         	 true
         	 )
-        join %1$I.__nodes on lw_id = node
-        group by start_vid, end_vid
+        JOIN %1$I.__nodes on lw_id = node
+        GROUP BY start_vid, end_vid
   $_$;  
   --raise notice '%', format(qrytxt,lw_schema, source, distance);
   EXECUTE format(qrytxt,lw_schema, source);
@@ -61,3 +61,6 @@ END IF;
 
 END;
 $lw_tracesource$;
+
+COMMENT ON FUNCTION lw_tracesource(in lw_schema text, in source bigint, in truth boolean) IS
+  'Returns geometric trace give a livewire name and a set of lw_ids FROM __nodes.';

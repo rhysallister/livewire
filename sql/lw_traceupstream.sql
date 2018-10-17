@@ -1,7 +1,7 @@
 CREATE FUNCTION lw_traceupstream(
-  in lw_schema text,
-  in lw_id bigint,
-  out g geometry) as
+  IN lw_schema text,
+  IN lw_id bigint,
+  OUT g geometry) AS
 
 $lw_traceupstream$
   DECLARE
@@ -17,3 +17,6 @@ $lw_traceupstream$
   END;
 
 $lw_traceupstream$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) IS
+  'Returns an upstream geometric trace given a livewire name a lw_id FROM __nodes.';

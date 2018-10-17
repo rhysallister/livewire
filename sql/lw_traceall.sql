@@ -31,7 +31,7 @@ $lw_traceall$
     
 
   qrytxt := $$ SELECT row_number() over (), count(lw_id) over (), lw_id
-		FROM %I.__nodes where status = 'SOURCE'$$;
+		FROM %I.__nodes WHERE status = 'SOURCE'$$;
   for looprec in EXECUTE(format(qrytxt, lw_schema)) LOOP
                 RAISE NOTICE 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
                 timer := clock_timestamp();
@@ -45,3 +45,6 @@ END;
   
 
 $lw_traceall$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_traceall(in lw_schema text) IS 
+  'Initiates a trace to populate the livewire shadow table';

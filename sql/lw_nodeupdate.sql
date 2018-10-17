@@ -14,3 +14,6 @@ $lw_nodemodify$
     RETURN NEW;
   END;
 $lw_nodemodify$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_nodeupdate is 
+  'Trigger function to fire for an update on any node particpant';

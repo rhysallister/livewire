@@ -14,3 +14,6 @@ $lw_nodeinsert$
     RETURN NEW;
   END;
 $lw_nodeinsert$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_nodeinsert is 
+'Trigger function to fire for an insert on any node particpant';
