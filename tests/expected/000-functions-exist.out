@@ -1,5 +1,5 @@
 \unset ECHO
-1..27
+1..29
 ok 1 - Check for the existense of the livewire extension
 ok 2 - Check for lw_addedgeparticipant
 ok 3 - Check for lw_addnodeparticipant
@@ -14,16 +14,18 @@ ok 11 - Check for lw_initialise
 ok 12 - Check for lw_nodedelete
 ok 13 - Check for lw_nodeinsert
 ok 14 - Check for lw_nodeupdate
-ok 15 - Check for lw_redirect
-ok 16 - Check for lw_singlesource
-ok 17 - Check for lw_singlesource - Single source variant
-ok 18 - Check for lw_sourcenodes
-ok 19 - Check for lw_srid
-ok 20 - Check for lw_tolerance
-ok 21 - Check for lw_traceall
-ok 22 - Check for lw_tracednstream - Single source variant
-ok 23 - Check for lw_tracednstream - Multiple source variant
-ok 24 - Check for lw_tracednstream - Multiple source and blockers variant
-ok 25 - Check for lw_tracednstream - Multiple source and blockers variant
-ok 26 - Check for lw_tracesource
-ok 27 - Check for lw_traceupstream
+ok 15 - Check for lw_originrow
+ok 16 - Check for lw_redirect
+ok 17 - Check for lw_singlesource
+ok 18 - Check for lw_singlesource - Single source variant
+ok 19 - Check for lw_sourcenodes
+ok 20 - Check for lw_srid
+ok 21 - Check for lw_tableconfig
+ok 22 - Check for lw_tolerance
+ok 23 - Check for lw_traceall
+ok 24 - Check for lw_tracednstream - Single source variant
+ok 25 - Check for lw_tracednstream - Multiple source variant
+ok 26 - Check for lw_tracednstream - Multiple source and blockers variant
+ok 27 - Check for lw_tracednstream - Multiple source and blockers variant
+ok 28 - Check for lw_tracesource
+ok 29 - Check for lw_traceupstream

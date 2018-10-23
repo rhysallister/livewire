@@ -22,7 +22,9 @@ BEGIN
 END;
 $lw_addedgeparticipant$ language plpgsql;
 
-COMMENT ON FUNCTION lw_addedgeparticipant(text, json) is '';/*	Adds configuration data for a node participant	*/
+COMMENT ON FUNCTION lw_addedgeparticipant(text, json) IS
+  'Adds the configuration data for a edge table to the livewire config table';
+/*	Adds configuration data for a node participant	*/
 
 CREATE OR REPLACE FUNCTION lw_addnodeparticipant(
     lw_schema text,
@@ -33,21 +35,23 @@ $lw_addnodeparticipant$
 
 BEGIN
 
-
   EXECUTE format(
     $$INSERT INTO %1$I.%1$I (tablename, tabletype, tableconfig)
     VALUES ('%2$I.%3$I', 'NODE', %4$L)$$,
-    lw_schema, nodeinfo->>'schemaname',nodeinfo->>'tablename', nodeinfo);
-
-
+    lw_schema, 
+    nodeinfo->>'schemaname',
+    nodeinfo->>'tablename',
+    nodeinfo
+    );
 
 END;
 $lw_addnodeparticipant$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_addnodeparticipant is '';CREATE FUNCTION lw_edgedelete()  RETURNS trigger AS 
+COMMENT ON FUNCTION lw_addnodeparticipant IS
+  'Adds the configuration for a node table to the livewire config table';
+CREATE FUNCTION lw_edgedelete()  RETURNS trigger AS 
 
 $lw_edgedelete$
-
 
   DECLARE
 
@@ -61,30 +65,27 @@ $lw_edgedelete$
   END;
 $lw_edgedelete$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_edgedelete is '';CREATE FUNCTION lw_edgeinsert()  RETURNS trigger AS 
+COMMENT ON FUNCTION lw_edgedelete IS
+  'Trigger function to fire for a delete on any edge particpant';
+CREATE FUNCTION lw_edgeinsert()  RETURNS trigger AS 
 
 $lw_edgeinsert$
 
-
-  DECLARE
-
-
   BEGIN
     RAISE NOTICE '%', format('%I.%I',TG_TABLE_SCHEMA, TG_TABLE_NAME); 
     RAISE NOTICE '-------------------------------------------------';
     RAISE NOTICE '%', row_to_json((NEW.*)); 
     RAISE NOTICE '%', row_to_json((OLD.*)); 
     RETURN NEW;
+  
   END;
 $lw_edgeinsert$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_edgeinsert is '';CREATE FUNCTION lw_edgeupdate()  RETURNS trigger AS 
+COMMENT ON FUNCTION lw_edgeINSERT IS
+  'Trigger function to fire for an INSERT on any edge particpant';
+CREATE FUNCTION lw_edgeupdate()  RETURNS trigger AS 
 
 $lw_edgeupdate$
-
-
-  DECLARE
-
 
   BEGIN
     RAISE NOTICE '%', format('%I.%I',TG_TABLE_SCHEMA, TG_TABLE_NAME); 
@@ -92,10 +93,13 @@ $lw_edgeupdate$
     RAISE NOTICE '%', row_to_json((NEW.*)); 
     RAISE NOTICE '%', row_to_json((OLD.*)); 
     RETURN NEW;
+
   END;
 $lw_edgeupdate$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_edgeupdate is '';/*    Returns an array of lw_ids that correspond to endnodes    */
+COMMENT ON FUNCTION lw_edgeupdate IS
+  'Trigger function to fire for an update on any edge particpant';
+/*    Returns an array of lw_ids that correspond to endnodes    */
 
 CREATE OR REPLACE FUNCTION lw_endnodes(
   IN lw_schema text,
@@ -103,16 +107,18 @@ CREATE OR REPLACE FUNCTION lw_endnodes(
   ) AS 
 
 $lw_endnodes$
+
 DECLARE
   qrytxt text; 
+
 BEGIN
   -- Find all end nodes in a given livewire
   
-  qrytxt := 'select array_agg(lw_id) from
-		(select source lw_id from 
-		(select lw_id, source from %1$I.__lines 
-		union 
-		select lw_id, target from %1$I.__lines ) as lines
+  qrytxt := 'SELECT array_agg(lw_id) FROM
+		(SELECT source lw_id FROM 
+		(SELECT lw_id, source FROM %1$I.__lines 
+		UNION 
+		SELECT lw_id, target FROM %1$I.__lines ) as lines
 		group by source  
 		having count(lw_id) = 1) as lw_ids';
   
@@ -122,12 +128,15 @@ END;
 $lw_endnodes$ LANGUAGE 'plpgsql';
 
 
-COMMENT ON FUNCTION lw_endnodes is '';/*	Populate the network tables. 		*/
+COMMENT ON FUNCTION lw_endnodes IS
+  'Returns an array of all endnodes in a given livewire';
+/*	Populate the network tables. 		*/
 
 CREATE OR REPLACE FUNCTION lw_generate(
 	  lw_schema text
 	)
     RETURNS SETOF void AS 
+    
 $lw_generate$
 
 DECLARE
@@ -144,7 +153,7 @@ BEGIN
   EXECUTE format($$ TRUNCATE %1$I.__lines $$, lw_schema);
   EXECUTE format($$ TRUNCATE %1$I.__nodes $$, lw_schema);
 
-  FOR looprec IN EXECUTE format('SELECT * from   %1$I.%1$I' ,lw_schema) LOOP
+  FOR looprec IN EXECUTE format('SELECT * FROM   %1$I.%1$I' ,lw_schema) LOOP
     IF looprec.tabletype = 'EDGE' THEN
       PERFORM lw_generateedge(lw_schema,looprec.tablename);
     ELSIF looprec.tabletype = 'NODE' THEN
@@ -157,82 +166,80 @@ BEGIN
     
     EXECUTE format($$ 
       with one as ( 
-        select st_astext(st_startpoint(g)) aa from %1$I.__lines
-        union
-        select st_astext(st_endpoint(g)) from %1$I.__lines),
+        SELECT st_astext(st_startpoint(g)) aa FROM %1$I.__lines
+        UNION         SELECT st_astext(st_endpoint(g)) FROM %1$I.__lines),
       two as (
-        select distinct aa from %1$I.__nodes
+        SELECT distinct aa FROM %1$I.__nodes
         right join one on st_3dintersects(g, st_setsrid(aa::geometry,%2$L))
-        where g is null)
-      insert into %1$I.__nodes (lw_table_pkid,status, g) 
-      SELECT -1, 'NODE', st_setsrid(aa::geometry,%2$L) from two $$,
+        WHERE g is null)
+      INSERT into %1$I.__nodes (lw_table_pkid,status, g) 
+      SELECT -1, 'NODE', st_setsrid(aa::geometry,%2$L) FROM two $$,
     lw_schema, srid);
   
     EXECUTE format($$
       UPDATE %1$I.__lines l
       set source = n.lw_id 
-      from %1$I.__nodes n 
-      where st_3dintersects(n.g, st_startpoint(l.g)) $$,
+      FROM %1$I.__nodes n 
+      WHERE st_3dintersects(n.g, st_startpoint(l.g)) $$,
     lw_schema);
 
     EXECUTE format($$
       UPDATE %1$I.__lines l
       SET target = n.lw_id 
-      from %1$I.__nodes n
-      where st_3dintersects(n.g, st_endpoint(l.g)) $$,
+      FROM %1$I.__nodes n
+      WHERE st_3dintersects(n.g, st_endpoint(l.g)) $$,
     lw_schema);
 
     EXECUTE format($$
       UPDATE %1$I.__lines l
       SET multiplier = -1
       FROM %1$I.__nodes n 
-      where st_3dintersects(n.g, l.g) and n.status = 'BLOCK' $$,
+      WHERE st_3dintersects(n.g, l.g) and n.status = 'BLOCK' $$,
     lw_schema);
   
   ELSE
   
     EXECUTE format($$ 
       with one as ( 
-        select st_astext(st_startpoint(g)) aa from %1$I.__lines
-        union
-        select st_astext(st_endpoint(g)) from %1$I.__lines),
+        SELECT st_astext(st_startpoint(g)) aa FROM %1$I.__lines
+        UNION         SELECT st_astext(st_endpoint(g)) FROM %1$I.__lines),
       two as (
-        select distinct aa from %1$I.__nodes
+        SELECT distinct aa FROM %1$I.__nodes
         right join one on st_3ddwithin(g, st_setsrid(aa::geometry,%2$L),%3$L)
-        where g is null)
-      insert into %1$I.__nodes (lw_table_pkid,status, g) 
-      SELECT -1, 'NODE', st_setsrid(aa::geometry,%2$L) from two $$,
+        WHERE g is null)
+      INSERT into %1$I.__nodes (lw_table_pkid,status, g) 
+      SELECT -1, 'NODE', st_setsrid(aa::geometry,%2$L) FROM two $$,
     lw_schema, srid, tolerance);
   
     EXECUTE format($$
       UPDATE %1$I.__lines l
       set source = n.lw_id 
-      from %1$I.__nodes n
-      where st_3ddwithin(n.g, st_startpoint(l.g), %2$L) $$,
+      FROM %1$I.__nodes n
+      WHERE st_3ddwithin(n.g, st_startpoint(l.g), %2$L) $$,
     lw_schema, tolerance);
 
     EXECUTE format($$
       UPDATE %1$I.__lines l
       set target = n.lw_id 
-      from %1$I.__nodes n
-      where st_3ddwithin(n.g, st_endpoint(l.g), %2$L) $$,
+      FROM %1$I.__nodes n
+      WHERE st_3ddwithin(n.g, st_endpoint(l.g), %2$L) $$,
     lw_schema, tolerance);
 
     EXECUTE format($$
       UPDATE %1$I.__lines l
       set multiplier = -1
-      from %1$I.__nodes n
-      where st_3ddwithin(n.g, l.g, %2$L) and n.status = 'BLOCK' $$,
+      FROM %1$I.__nodes n
+      WHERE st_3ddwithin(n.g, l.g, %2$L) and n.status = 'BLOCK' $$,
     lw_schema, tolerance);
  END IF; 
 	
  
  EXECUTE format(
-  'SELECT  count(*)  from %1$I.__lines  WHERE source = target',
+  'SELECT  count(*)  FROM %1$I.__lines  WHERE source = target',
   lw_schema
  ) INTO looprec;
  IF looprec.count > 1 THEN
-   qrytxt := 'SELECT lw_table, lw_table_pkid, st_length(g) FROM %1$I.__lines where source = target';
+   qrytxt := 'SELECT lw_table, lw_table_pkid, st_length(g) FROM %1$I.__lines WHERE source = target';
   RAISE NOTICE 'The follwing rows are probably below the tolerance threshold:'; 
   FOR looprec in EXECUTE format(qrytxt, lw_schema) LOOP
      RAISE NOTICE 'Primary Key % in table %.', looprec.lw_table_pkid, looprec.lw_table;
@@ -244,7 +251,8 @@ END IF;
 END;
 $lw_generate$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_generate is '';/*    Populate edge tables    */
+COMMENT ON FUNCTION lw_generate IS
+  'Populate the shadow tables';/*    Populate edge tables    */
 
 CREATE OR REPLACE FUNCTION lw_generateedge(
     lw_schema text,
@@ -392,7 +400,7 @@ EXECUTE format(
     "edge_insert": "lw_edgeinsert()"}';
 
 
-  FOR looprec in  select * from json_each_text(triginfo) LOOP
+  FOR looprec in  SELECT * FROM json_each_text(triginfo) LOOP
     qrytxt := $$ CREATE TRIGGER %3$I BEFORE UPDATE ON %1$I.%2$I
       FOR EACH ROW EXECUTE PROCEDURE %4$s $$;
     EXECUTE format(qrytxt, ei->>'schemaname',ei->>'tablename',looprec.key, looprec.value);
@@ -425,21 +433,21 @@ BEGIN
   
   /*    Get table config data   */
   EXECUTE format(
-    'select tableconfig from %1$I.%1$I where tablename = %2$L',
+    'SELECT tableconfig FROM %1$I.%1$I WHERE tablename = %2$L',
     lw_schema,tablename
   ) into ni; 
   
   /*    check that table exists   */
-  PERFORM * from pg_catalog.pg_class pc
+  PERFORM * FROM pg_catalog.pg_class pc
     JOIN pg_catalog.pg_namespace pn on pc.relnamespace=pn.oid
-    where nspname = ni->>'schemaname'
+    WHERE nspname = ni->>'schemaname'
     and relname = ni->>'tablename';
   IF NOT FOUND THEN
     RAISE '% not found in system catalogs', ni->>'tablename';
   END IF;
   
   /*    check that table has a geometry column    */
-  PERFORM * from pg_catalog.pg_attribute pa
+  PERFORM * FROM pg_catalog.pg_attribute pa
     JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
     JOIN pg_catalog.pg_class on attrelid = oid
     JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
@@ -450,7 +458,7 @@ BEGIN
   END IF;
 
   /*    check that phase column exists    */
-  PERFORM * from pg_catalog.pg_attribute pa
+  PERFORM * FROM pg_catalog.pg_attribute pa
     JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
     JOIN pg_catalog.pg_class pc on attrelid = pc.oid
     JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
@@ -461,16 +469,16 @@ BEGIN
   END IF;
 
   /*    Check that config info has the correct phase keys   */
-  PERFORM count(*) from json_each_text(ni->'phasemap')
-    where key in ('ABC','AB','AC','BC','A','B','C') and value is not null
-    except select 7;
+  PERFORM count(*) FROM json_each_text(ni->'phasemap')
+    WHERE key in ('ABC','AB','AC','BC','A','B','C') and value is not null
+    except SELECT 7;
   IF FOUND THEN
     RAISE 'phase column mapping not accurate';
   END IF;
 
   /*    Check that unique column is unique    */
   EXECUTE format(
-    'SELECT %3$I from %1$I.%2$I group by %3$I having count(%3$I) > 1',
+    'SELECT %3$I FROM %1$I.%2$I group by %3$I having count(%3$I) > 1',
     ni->>'schemaname', ni->>'tablename', ni->>'primarykey'
   );
   GET DIAGNOSTICS diaginfo = ROW_COUNT;
@@ -480,7 +488,7 @@ BEGIN
 
   /*    Check that geometry column has no duplicates    */
   EXECUTE format(
-    'SELECT st_astext(%3$I) from %1$I.%2$I group by %3$I
+    'SELECT st_astext(%3$I) FROM %1$I.%2$I group by %3$I
     having count(st_astext(%3$I)) > 1',
     ni->>'schemaname', ni->>'tablename', ni->>'geomcolumn'
   );
@@ -491,7 +499,7 @@ BEGIN
 
   qrytxt := format($qrytxt$ 
     with one as (
-      select 
+      SELECT 
         %3$I pk, 
         CASE 
           WHEN %5$I = %6$L THEN 'ABC'
@@ -508,18 +516,18 @@ BEGIN
           ELSE 'DEVICE' 
         END status,
         %4$I geom 
-      from %1$I.%2$I
+      FROM %1$I.%2$I
    ),
    two as (
-     select 
+     SELECT 
        pk, 
        phase, 
        status,
        st_force3d(st_setsrid(geom,%13$L))::geometry(POINTZ,%13$L) geom 
-    from one)
-  select 
-    '%1$I.%2$I' lw_table, pk lw_table_pkid, status, phase, geom from two 
-  where geom is not null
+    FROM one)
+  SELECT 
+    '%1$I.%2$I' lw_table, pk lw_table_pkid, status, phase, geom FROM two 
+  WHERE geom is not null
   $qrytxt$,
   ni->>'schemaname', ni->>'tablename', ni->>'primarykey', ni->>'geomcolumn',
   ni->>'phasecolumn', ni->'phasemap'->>'ABC', ni->'phasemap'->>'AB', 
@@ -539,7 +547,7 @@ BEGIN
     "node_insert": "lw_nodeinsert()"}';
 
 
-  FOR looprec in  select * from json_each_text(triginfo) LOOP
+  FOR looprec in  SELECT * FROM json_each_text(triginfo) LOOP
     qrytxt := $$ CREATE TRIGGER %3$I BEFORE UPDATE ON %1$I.%2$I
       FOR EACH ROW EXECUTE PROCEDURE %4$s $$;
     EXECUTE format(qrytxt, ni->>'schemaname',ni->>'tablename',looprec.key, looprec.value);
@@ -627,7 +635,7 @@ BEGIN
   EXECUTE format($$ CREATE INDEX ON %1$I.__lines USING gist (g) $$,lw_schema);
   EXECUTE format($$ CREATE INDEX ON %1$I.__nodes USING gist (g) $$,lw_schema);
   EXECUTE format($$ CREATE UNIQUE INDEX ON %1$I.%1$I (tabletype) 
-    where tabletype = 'config' $$,lw_schema); 
+    WHERE tabletype = 'config' $$,lw_schema); 
   
   EXECUTE format($$ INSERT INTO %1$I.%1$I VALUES 
     ('%1$I.%1$I','config', '{"lw_tolerance": "%2$s", "lw_srid" : "%3$s"}'::json) $$,
@@ -656,7 +664,8 @@ $lw_nodedelete$
   END;
 $lw_nodedelete$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_nodedelete is '';CREATE FUNCTION lw_nodeinsert()  RETURNS trigger AS 
+COMMENT ON FUNCTION lw_nodedelete is 
+  'Trigger function to fire for a delete on any node particpant';CREATE FUNCTION lw_nodeinsert()  RETURNS trigger AS 
 
 $lw_nodeinsert$
 
@@ -673,7 +682,8 @@ $lw_nodeinsert$
   END;
 $lw_nodeinsert$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_nodeinsert is '';CREATE FUNCTION lw_nodeupdate()  RETURNS trigger AS 
+COMMENT ON FUNCTION lw_nodeinsert is 
+'Trigger function to fire for an insert on any node particpant';CREATE FUNCTION lw_nodeupdate()  RETURNS trigger AS 
 
 $lw_nodemodify$
 
@@ -690,7 +700,50 @@ $lw_nodemodify$
   END;
 $lw_nodemodify$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_nodeupdate is '';
+COMMENT ON FUNCTION lw_nodeupdate is 
+  'Trigger function to fire for an update on any node particpant';
+/*		Gets row from origin table		*/
+
+CREATE OR REPLACE FUNCTION lw_originrow(
+  IN lw_schema text,
+  IN lw_id bigint,
+  OUT dump jsonb
+  ) AS
+  
+$lw_originrow$
+
+DECLARE
+  thisrow jsonb; 
+  tableconfig jsonb;
+
+BEGIN
+  EXECUTE format($$ SELECT row_to_json(n.*) FROM %1$I.__nodes n 
+                 WHERE lw_id = %2$s $$,
+    lw_schema,
+    lw_id
+    )
+    INTO thisrow;
+
+  EXECUTE format($$ SELECT tableconfig FROM %1$I.%1$I WHERE tablename = %2$L $$,
+    lw_schema,
+    thisrow->>'lw_table'
+    )
+    INTO tableconfig;
+
+  EXECUTE format($$ SELECT  row_to_json(a.*) FROM 
+                (SELECT * FROM %1$s where %2$I =  %3$L) as a $$,
+    thisrow->>'lw_table',
+    tableconfig->>'primarykey',
+    thisrow->>'lw_table_pkid'
+    )
+    INTO dump;
+
+END;
+
+$lw_originrow$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_originrow(IN lw_schema text, in lw_id bigint) IS
+  'Returns the row of the original table given the lw_id of the shadow network.';
 /*    'redirect' lines based upon their source origin    */
 
 CREATE OR REPLACE FUNCTION lw_redirect(
@@ -701,49 +754,67 @@ CREATE OR REPLACE FUNCTION lw_redirect(
 $lw_redirect$
 
 DECLARE
+  feedername text;
   qrytxt text;
   updtxt text;
   looprec record;
+  tablename text;
   timer timestamptz;
   tolerance float;
 
 BEGIN
-/*    Trace from all blocks to source   */
+/*    Trace FROM all blocks to source   */
+
   tolerance = lw_tolerance(lw_schema);
+  RAISE NOTICE 'Redirecting Source: %', source;
+  timer =  clock_timestamp();
+  EXECUTE format('SELECT lw_table from %1$I.__nodes where lw_id = %2$L', lw_schema, source) INTO tablename;
+  feedername = lw_tableconfig(lw_schema, tablename)->> 'feederid';
+  feedername = lw_originrow(lw_schema, source)->>feedername;
+  RAISE NOTICE '%', feedername;
   
+ 
+   
   qrytxt := $$
-  with recursive aaa(node_lw_id, line_lw_id, node_status,  status, line_g, path,  cycle ) as (
-	select  n.lw_id, l.lw_id, n.status, 
-	 
+  with recursive aaa(node_lw_id, line_lw_id, node_status,  status, source, target, line_g, path,  cycle ) as (
+	SELECT  n.lw_id, l.lw_id, n.status, 
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN 'GOOD' ELSE 'FLIPPED' END, 
+	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN source ELSE target END,
+	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN target ELSE source END,
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.g ELSE st_reverse(l.g) END,
 	array[n.lw_id], false
-	from %1$I.__nodes n
+	FROM %1$I.__nodes n
 	join %1$I.__lines l on st_3ddwithin(n.g, l.g, %2$s)
-	where n.lw_id = %3$s
+	WHERE n.lw_id = %3$s
 	UNION ALL
 	SELECT n.lw_id, l.lw_id, n.status,
-	
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN 'GOOD' ELSE 'FLIPPED' END, 
+	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.source ELSE l.target END,
+	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.target ELSE l.source END,
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.g ELSE st_reverse(l.g) END, path || n.lw_id, n.lw_id =ANY(path)
 	FROM aaa
 	join %1$I.__lines l on st_3ddwithin(st_endpoint(aaa.line_g),l.g,%2$s)  
 	join %1$I.__nodes n on st_3ddwithin(st_endpoint(aaa.line_g),n.g,%2$s)  
-	where aaa.line_lw_id <> l.lw_id   and node_status <> 'BLOCK' and not cycle
+	WHERE aaa.line_lw_id <> l.lw_id   and node_status <> 'BLOCK' and not cycle
 	),
 	bbb as (SELECT * FROM aaa)
 	UPDATE %1$I.__lines l set 
-	g = st_reverse(l.g), x1 = l.x2, x2 = l.x1, y1 = l.y2, y2 = l.y1, z1 = l.z2, z2 = l.z1, source = l.target, target = l.source
-	from bbb where l.lw_id = bbb.line_lw_id
-    and  node_status <> 'BLOCK' and status = 'FLIPPED'
+	g = bbb.line_g, x1 = st_x(st_startpoint(line_g)), x2 =st_x(st_endpoint(line_g)), 
+	y1 = st_y(st_startpoint(line_g)), y2 = st_y(st_endpoint(line_g)), 
+	z1 = st_z(st_startpoint(line_g)), z2 = st_z(st_endpoint(line_g)), 
+	source = bbb.target, target = bbb.source, feederid = %4$L
+	FROM bbb WHERE l.lw_id = bbb.line_lw_id
+    and  node_status <> 'BLOCK' 
    $$;
-   execute format(qrytxt,lw_schema, tolerance, source); 
+   execute format(qrytxt,lw_schema, tolerance, source, feedername); 
+  RAISE NOTICE 'Duration: %', clock_timestamp() - timer;
   end;
   
-
 $lw_redirect$ language plpgsql;
 
-COMMENT ON FUNCTION lw_redirect is '';CREATE OR REPLACE FUNCTION lw_singlesource(
+COMMENT ON FUNCTION lw_redirect is 
+  'Makes shadow network directed based upon a give source node.';
+CREATE OR REPLACE FUNCTION lw_singlesource(
   IN lw_schema text,
   OUT truth boolean
         )
@@ -756,14 +827,13 @@ AS $lw_singlesource$
    zerocount bigint; 
   BEGIN
 
-
   /*    Verify all sources cannot reach each other.... that would be bad   */
   qrytxt := $_$
-    select count(*) from pgr_dijkstra(
-           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost
-           from %1$I.__lines  $$,
-           (select lw_sourcenodes('%1$s')),
-           (select lw_sourcenodes('%1$s')),
+    SELECT count(*) FROM pgr_dijkstra(
+           $$SELECT lw_id  id, source, target, st_3dlength(g) * multiplier   as cost
+           FROM %1$I.__lines  $$,
+           (SELECT lw_sourcenodes('%1$s')),
+           (SELECT lw_sourcenodes('%1$s')),
            false
            )
   $_$;
@@ -774,13 +844,12 @@ AS $lw_singlesource$
     truth = True;
   END IF;
 
-
 END;
-
 
 $lw_singlesource$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_singlesource(text) is '';
+COMMENT ON FUNCTION lw_singlesource(text) is 
+  'Given an lw_schema determine if any sourcenode can reach any other sourcenode';
 
 CREATE OR REPLACE FUNCTION lw_singlesource(
   IN lw_schema text,
@@ -799,11 +868,11 @@ AS $lw_singlesource$
 
   /*    Verify all sources cannot reach each other.... that would be bad   */
   qrytxt := $_$
-    select count(*) from pgr_dijkstra(
-           $$select lw_id  id, source, target, st_3dlength(g) * multiplier   as cost
-           from %1$I.__lines  $$,
+    SELECT count(*) FROM pgr_dijkstra(
+           $$SELECT lw_id  id, source, target, st_3dlength(g) * multiplier AS cost
+           FROM %1$I.__lines  $$,
            '%2$s',
-           (select lw_sourcenodes('%1$s')),
+           (SELECT lw_sourcenodes('%1$s')),
            false
            )
   $_$;
@@ -817,11 +886,10 @@ AS $lw_singlesource$
 
 END;
 
-
 $lw_singlesource$ LANGUAGE plpgsql;
 
-
-COMMENT ON FUNCTION lw_singlesource(text, bigint) is '';
+COMMENT ON FUNCTION lw_singlesource(text, bigint) is 
+  'Given an lw_schema and an lw_id determine if lw_id can reach more than one source';
 /*    Returns an array of all SOURCE nodes in a livewire enabled schema    */
 
 CREATE OR REPLACE FUNCTION lw_sourcenodes(
@@ -835,55 +903,79 @@ DECLARE
 
 BEGIN 
   
-  qrytxt := $$select array_agg(lw_id) from %1$I.__nodes
-		where status = 'SOURCE'$$;  
+  qrytxt := $$SELECT array_agg(lw_id) FROM %1$I.__nodes
+		WHERE status = 'SOURCE'$$;  
   execute format(qrytxt,lw_schema) into myarray;
 
 END;
 
 $lw_sourcenodes$  LANGUAGE 'plpgsql';
 
-COMMENT ON FUNCTION lw_sourcenodes(text) is '';/*		Gets the SRID of a livewire enabled schema 		*/
+COMMENT ON FUNCTION lw_sourcenodes(text) is 
+  'Returns an array of sourc nodes';/*		Gets the SRID of a livewire enabled schema 		*/
 
 CREATE OR REPLACE FUNCTION lw_srid(
   IN lw_schema text,
-  out lw_srid bigint
-  ) as 
+  OUT lw_srid bigint
+  ) AS
   
 $lw_srid$
 
 BEGIN
 
   EXECUTE format($$ SELECT (tableconfig->>'lw_srid')::bigint
-    from %1$I.%1$I where tabletype = 'config' $$, lw_schema)
+    FROM %1$I.%1$I WHERE tabletype = 'config' $$, lw_schema)
     into lw_srid;
 
 END;
 
 $lw_srid$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_srid(text) is '';
+COMMENT ON FUNCTION lw_srid(text) is 
+  'Returns the SRID of a given lw_schema';
+/*		Gets the tolerance of a livewire enabled schema 		*/
+
+CREATE OR REPLACE FUNCTION lw_tableconfig(
+  IN lw_schema text,
+  IN tablename text,
+  OUT lw_tableconfig json
+  ) AS
+  
+$lw_tableconfig$
+
+BEGIN
+
+  EXECUTE format($$ SELECT tableconfig
+    FROM %1$I.%1$I WHERE tablename = %2$L $$, lw_schema, tablename)
+    into lw_tableconfig;
+
+END;
+
+$lw_tableconfig$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION lw_tableconfig(IN lw_schema text, in tablename text) IS
+  'Returns the tableconfig for a given table.';
 /*		Gets the tolerance of a livewire enabled schema 		*/
 
 CREATE OR REPLACE FUNCTION lw_tolerance(
   IN lw_schema text,
-  out lw_tolerance float
-  ) as 
+  OUT lw_tolerance float
+  ) AS
   
 $lw_tolerance$
 
 BEGIN
 
   EXECUTE format($$ SELECT (tableconfig->>'lw_tolerance')::float
-    from %1$I.%1$I where tabletype = 'config' $$, lw_schema)
+    FROM %1$I.%1$I WHERE tabletype = 'config' $$, lw_schema)
     into lw_tolerance;
 
 END;
 
 $lw_tolerance$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_tolerance(IN lw_schema text) is 'Returns the tolerance set for a given livewire.';
-
+COMMENT ON FUNCTION lw_tolerance(IN lw_schema text) IS
+  'Returns the tolerance set for a given livewire.';
 /*    Initiate trace of all sources   */
 
 CREATE OR REPLACE FUNCTION lw_traceall(
@@ -917,7 +1009,7 @@ $lw_traceall$
     
 
   qrytxt := $$ SELECT row_number() over (), count(lw_id) over (), lw_id
-		FROM %I.__nodes where status = 'SOURCE'$$;
+		FROM %I.__nodes WHERE status = 'SOURCE'$$;
   for looprec in EXECUTE(format(qrytxt, lw_schema)) LOOP
                 RAISE NOTICE 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
                 timer := clock_timestamp();
@@ -932,10 +1024,11 @@ END;
 
 $lw_traceall$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_traceall(in lw_schema text) is '';CREATE FUNCTION lw_tracednstream(
+COMMENT ON FUNCTION lw_traceall(in lw_schema text) IS 
+  'Initiates a trace to populate the livewire shadow table';CREATE FUNCTION lw_tracednstream(
   IN lw_schema text,
   IN lw_id bigint,
-  out g geometry) as
+  OUT g geometry) AS
 
 $lw_tracednstream$
   DECLARE
@@ -952,15 +1045,14 @@ $lw_tracednstream$
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_id bigint) is 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_id bigint) IS
   'Returns geometric trace give a livewire name and an lw_id form __nodes.';
 
 
 CREATE FUNCTION lw_tracednstream(
   IN lw_schema text,
   IN lw_ids bigint[],
-  out g geometry) as
-
+  out g geometry) AS
 $lw_tracednstream$
   DECLARE
     rec record;
@@ -970,7 +1062,7 @@ $lw_tracednstream$
 
     qrytxt := 'CREATE TEMPORARY TABLE __ ON COMMIT DROP AS 
                SELECT  *, null::bigint[] ne FROM %1$I.__livewire 
-               where %2$L && nodes';
+               WHERE %2$L && nodes';
     EXECUTE format(qrytxt, lw_schema, lw_ids); 
 
 
@@ -982,23 +1074,22 @@ $lw_tracednstream$
         ELSE edges[(array_position(nodes::bigint[], z)):] end;
     END LOOP;
     
-    qrytxt := 'SELECT st_union(g) from %1$I.__lines WHERE lw_id IN
-               (select distinct unnest(ne) FROM __)';
+    qrytxt := 'SELECT st_union(g) FROM %1$I.__lines WHERE lw_id IN
+               (SELECT distinct unnest(ne) FROM __)';
     EXECUTE format(qrytxt, lw_schema) into g;
   END;
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) is 
-  'Returns geometric trace give a livewire name and a set of lw_ids from __nodes.';
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) IS
+  'Returns geometric trace give a livewire name and a set of lw_ids FROM __nodes.';
 
 
 CREATE FUNCTION lw_tracednstream(
   IN lw_schema text,
   IN lw_ids bigint[],
   IN bl_ids bigint[],
-  out g geometry) as
-
+  out g geometry) AS
 $lw_tracednstream$
   DECLARE
     rec record;
@@ -1030,24 +1121,23 @@ $lw_tracednstream$
         ELSE e[:(array_position(n::bigint[], z)) - 1] end;
     END LOOP;
     
-    qrytxt := 'SELECT st_union(g) from %1$I.__lines WHERE lw_id IN
-               (select distinct unnest(e) FROM __)';
+    qrytxt := 'SELECT st_union(g) FROM %1$I.__lines WHERE lw_id IN
+               (SELECT distinct unnest(e) FROM __)';
     EXECUTE format(qrytxt, lw_schema) into g;
   END;
 
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[], in bw_ids bigint[]) is 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[], in bw_ids bigint[]) IS
   'Returns geometric trace given a livewire name, a set of lw_ids as origins and a set of bl_ids as points to stop the trace
-  from the __nodes table.';
+  FROM the __nodes table.';
 
 
 CREATE FUNCTION lw_tracednstream(
   IN lw_schema text,
   IN in_g geometry,
-  out g geometry) as
-
+  out g geometry) AS
 $lw_tracednstream$
   DECLARE
     qrytxt text;
@@ -1061,7 +1151,7 @@ $lw_tracednstream$
 
 $lw_tracednstream$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in in_g geometry) is 
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in in_g geometry) IS
   'Returns geometric trace give a livewire name and a geometry.';
 /*    Given a source lw_id, trace a feeder and populate __livewire    */
 
@@ -1086,8 +1176,8 @@ DECLARE
 
 BEGIN
 
-EXECUTE format('delete from %I.__livewire where nodes[1] = %s',lw_schema,source);
-if checksource = True THEN
+EXECUTE format('delete FROM %I.__livewire WHERE nodes[1] = %s',lw_schema,source);
+IF checksource = True THEN
  RAISE NOTICE 'ALLCHECK';
 
 RAISE NOTICE 'Verify single source directive';
@@ -1101,21 +1191,21 @@ END IF;
  
  
   
-  /*    Trace from source out to distance  */
+  /*    Trace FROM source out to distance  */
   qrytxt := $_$
 		INSERT into %1$I.__livewire
-        select  
+        SELECT  
           array_agg(node order by path_seq) nodes ,
-          array_remove(array_agg(edge order by path_seq),-1::bigint) edges
-        from pgr_dijkstra(
-        	 $$select lw_id  id, source, target, st_3dlength(g) as cost  
-        	 from %1$I.__lines l  $$,
+          array_remove(array_agg(edge ORDER BY path_seq),-1::bigint) edges
+        FROM pgr_dijkstra(
+        	 $$SELECT lw_id  id, source, target, st_3dlength(g) AS cost  
+        	 FROM %1$I.__lines l  $$,
         	 array[%2$s]::bigint[],
-        	 (select lw_endnodes('%1$s')),
+        	 (SELECT lw_endnodes('%1$s')),
         	 true
         	 )
-        join %1$I.__nodes on lw_id = node
-        group by start_vid, end_vid
+        JOIN %1$I.__nodes on lw_id = node
+        GROUP BY start_vid, end_vid
   $_$;  
   --raise notice '%', format(qrytxt,lw_schema, source, distance);
   EXECUTE format(qrytxt,lw_schema, source);
@@ -1127,11 +1217,11 @@ END IF;
 END;
 $lw_tracesource$;
 
-COMMENT ON FUNCTION lw_tracesource(in lw_schema text, in source bigint, in truth boolean) is 
-  'Returns geometric trace give a livewire name and a set of lw_ids from __nodes.';CREATE FUNCTION lw_traceupstream(
+COMMENT ON FUNCTION lw_tracesource(in lw_schema text, in source bigint, in truth boolean) IS
+  'Returns geometric trace give a livewire name and a set of lw_ids FROM __nodes.';CREATE FUNCTION lw_traceupstream(
   IN lw_schema text,
   IN lw_id bigint,
-  out g geometry) as
+  OUT g geometry) AS
 
 $lw_traceupstream$
   DECLARE
@@ -1148,5 +1238,5 @@ $lw_traceupstream$
 
 $lw_traceupstream$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) is 
-  'Returns an upstream geometric trace given a livewire name a lw_id from __nodes.';
+COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) IS
+  'Returns an upstream geometric trace given a livewire name a lw_id FROM __nodes.';

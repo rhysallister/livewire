@@ -19,4 +19,3 @@ $lw_tolerance$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION lw_tolerance(IN lw_schema text) IS
   'Returns the tolerance set for a given livewire.';
-

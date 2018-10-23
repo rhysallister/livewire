@@ -10,7 +10,7 @@ cleanup:
 	rm -f -r tests/results
 	rm -f tests/regression.diffs
 	rm -f tests/regression.out
-	dropdb $(CONTRIB_TESTDB)
+	dropdb --if-exists $(CONTRIB_TESTDB)
 
 clean: cleanup
 

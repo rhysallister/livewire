@@ -1,11 +1,11 @@
 \unset ECHO
 \i tests/tests.sql
 
-/*******************************************************
+/*******************************************************************************
 				Test Suite for LiveWire
-*******************************************************/
+*******************************************************************************/
 
-SELECT plan(27);
+SELECT plan(29);
 
 SELECT has_extension('public', 'livewire', 'Check for the existense of the livewire extension');
 SELECT has_function('public', 'lw_addedgeparticipant', ARRAY['text', 'json'], 'Check for lw_addedgeparticipant');
@@ -21,11 +21,13 @@ SELECT has_function('public', 'lw_initialise', ARRAY['text', 'integer', 'double 
 SELECT has_function('public', 'lw_nodedelete', 'Check for lw_nodedelete');
 SELECT has_function('public', 'lw_nodeinsert', 'Check for lw_nodeinsert');
 SELECT has_function('public', 'lw_nodeupdate', 'Check for lw_nodeupdate');
+SELECT has_function('public', 'lw_originrow', ARRAY['text', 'bigint'], 'Check for lw_originrow');
 SELECT has_function('public', 'lw_redirect', ARRAY['text', 'bigint'], 'Check for lw_redirect');
 SELECT has_function('public', 'lw_singlesource', ARRAY['text'], 'Check for lw_singlesource');
 SELECT has_function('public', 'lw_singlesource', ARRAY['text', 'bigint'], 'Check for lw_singlesource - Single source variant');
 SELECT has_function('public', 'lw_sourcenodes', ARRAY['text'], 'Check for lw_sourcenodes');
 SELECT has_function('public', 'lw_srid', ARRAY['text'], 'Check for lw_srid');
+SELECT has_function('public', 'lw_tableconfig', ARRAY['text','text'], 'Check for lw_tableconfig');
 SELECT has_function('public', 'lw_tolerance', ARRAY['text'], 'Check for lw_tolerance');
 SELECT has_function('public', 'lw_traceall', ARRAY['text'], 'Check for lw_traceall');
 SELECT has_function('public', 'lw_tracednstream', ARRAY['text','bigint'], 'Check for lw_tracednstream - Single source variant');

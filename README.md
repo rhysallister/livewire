@@ -39,7 +39,7 @@ LiveWire groups common data together in a schema. For LiveWire to be effective t
 
 
 ``` SQL
-lw_initialise(lw_name text, srid int)
+lw_initialise(lw_name text, srid int, tolerance float)
 ```
 
 This will make an existing schema ready for LiveWire by adding 2 support tables. If the schema does not exist it will create the scheam and add the tables. For an existing schema the following table names are not allowed:
@@ -50,7 +50,7 @@ This will make an existing schema ready for LiveWire by adding 2 support tables.
 as these are the names of the support tables the LiveWire creates.
 
 ```
-SELECT lw_initialise('powerflow',3448);
+SELECT lw_initialise('powerflow',3448, 0.02);
 ```
 
 LiveWire imposes no restrictions on the structure of your data, you dont need to have certain column names existing for it to work. You do however have to configure it properly. Also, while it can manage three-phase electrical data, interrupting/isolating devices are at present either off for all phases or on for all phases.
@@ -74,6 +74,8 @@ This will add a configuration directive for linear data (e.g. primary lines) The
 - phasecolumn - the column that stores the phase data
 
 - phasemap - a mapping of each of the possible 7 phase combinations to the data in the phasecolumn
+
+- feederid - This is the name of the feeder
 
 ```
 lw_addnodeparticipant(lw_name text, lw_config json)
