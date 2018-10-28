@@ -41,6 +41,10 @@ LiveWire groups common data together in a schema. For LiveWire to be effective t
 ``` SQL
 lw_initialise(lw_name text, srid int, tolerance float)
 ```
+The ***lw_initialise*** functions takes the following params:
+- lw_name (text) - The name of the schema to be added to the database.
+- srid (int) - The ***Spatial Reference ID*** that a area or country is given.
+- tolerance (float) - The tolerance is the maximum distance at which two geometries, even though they do not physically intersect, will be said to do so. This param is optional and the default is 0.
 
 This will make an existing schema ready for LiveWire by adding 2 support tables. If the schema does not exist it will create the scheam and add the tables. For an existing schema the following table names are not allowed:
 -	__lines
