@@ -779,8 +779,8 @@ BEGIN
   with recursive aaa(node_lw_id, line_lw_id, node_status,  status, source, target, line_g, path,  cycle ) as (
 	SELECT  n.lw_id, l.lw_id, n.status, 
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN 'GOOD' ELSE 'FLIPPED' END, 
-	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN source ELSE target END,
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN target ELSE source END,
+	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN source ELSE target END,
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.g ELSE st_reverse(l.g) END,
 	array[n.lw_id], false
 	FROM %1$I.__nodes n
@@ -789,8 +789,8 @@ BEGIN
 	UNION ALL
 	SELECT n.lw_id, l.lw_id, n.status,
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN 'GOOD' ELSE 'FLIPPED' END, 
-	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.source ELSE l.target END,
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.target ELSE l.source END,
+	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.source ELSE l.target END,
 	CASE WHEN st_3ddwithin(n.g, st_startpoint(l.g),%2$s) THEN l.g ELSE st_reverse(l.g) END, path || n.lw_id, n.lw_id =ANY(path)
 	FROM aaa
 	join %1$I.__lines l on st_3ddwithin(st_endpoint(aaa.line_g),l.g,%2$s)  

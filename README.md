@@ -1,9 +1,8 @@
 # Livewire: Power delivery modeling. In your database.
 
-
 ## What is LiveWire?
 
-LiveWire is a postgresql extension that makes managing electrical distribution data painless. It provides wrapper functions around pgrouting to generate a pre cached routing network to make answering the most pertinent questions that electrical distribution engineers have.
+LiveWire is a postgresql extension that makes managing electrical distribution data painless. It provides functions that make answering the common questions that distribution engineers have easy. Livewire works with your existing data and does not force you to change your data to fit a given schema.
 
 ## Requirements and Dependencies
 
@@ -17,13 +16,14 @@ Clone this repository.
 Run:
 
 ``` shell
-make && sudo make install 
+make && sudo make install
 ```
 You may also want to run:
 
 ``` shell
 make installcheck
 ```
+to run the test suite.
 
 
 In the database that you want to enable LiveWire in run as a db superuser:
@@ -35,84 +35,82 @@ CREATE EXTENSION livewire;
 ```
 ## Usage
 
-LiveWire groups common data together in a schema. For LiveWire to be effective the data must be connected. Functions and views are provided that will indicate suspect data.
+LiveWire groups common data together in a schema. To create a new livewire, use the `lw_initialise` function. The following examples will use the [Navassa dataset] that can be found in the test folder in the repository
 
-
-``` SQL
-lw_initialise(lw_name text, srid int, tolerance float)
-```
-The ***lw_initialise*** functions takes the following params:
-- lw_name (text) - The name of the schema to be added to the database.
-- srid (int) - The ***Spatial Reference ID*** that a area or country is given.
+The `lw_initialise` functions takes the following arguments:
+- lw_name (text) - The name of the schema to be livewired. It will be created if it doesnt exist.
+- srid (int) - The ***Spatial Reference ID*** of the dataset.
 - tolerance (float) - The tolerance is the maximum distance at which two geometries, even though they do not physically intersect, will be said to do so. This param is optional and the default is 0.
 
-This will make an existing schema ready for LiveWire by adding 2 support tables. If the schema does not exist it will create the scheam and add the tables. For an existing schema the following table names are not allowed:
--	__lines
--	__nodes
--	__livewire
--	$$schemaname$$
-as these are the names of the support tables the LiveWire creates.
+`lw_initialise` makes a schema ready for LiveWire by adding four support tables:
+- __lines
+- __nodes
+- __livewire
+- schemaname
+
+For clarity, schemaname above is the name of the schema, so if you initialise a livewire in a schema name `powerflow`, there will be a table called `powerflow.powerflow` Clearly these table names are reserved in the context of any livewire enabled schema.
+
+So lets get the examples going with the [Navassa dataset]
 
 ```
-SELECT lw_initialise('powerflow',3448, 0.02);
+SELECT lw_initialise('navassa',3450);
 ```
 
-LiveWire imposes no restrictions on the structure of your data, you dont need to have certain column names existing for it to work. You do however have to configure it properly. Also, while it can manage three-phase electrical data, interrupting/isolating devices are at present either off for all phases or on for all phases.
+The next step is to add the tables that will be participating in the livewire to the config table. This is done with the `lw_addedgeparticpant` function for tables where the geometry type is linestring and `lw_addnodeparticpant` function for point tables. Both functions take two arguments.
 
+The `lw_addedgeparticipant` & `lw_addnodeparticipant` functions take the following arguments:
+- lw_name (text) - The name of the livewired schema.
+- lw_config (json) - a JSON object containing configuration directives.
+
+The configuration directives are keys in the JSON object.
+
+|Key        | Usage |
+------------|----------------------------------------------
+schemaname  | The name of the schema where this table lives.
+tablename   | The table in question.
+primarykey  | Any column that is unique, doesn't have to be a constrained column, but that would help.
+geomcolumn  | The column that holds the geometry.
+feederid    | Column name that stores the name of the source.
+phasecolumn | Column that has phasing data.
+phasemap    | an object of with the phase mapping.
+sourcequery | a text string containing a where clause that will filter for the source data.
+blockquery  | a text string containing a where clause that will mark open points.
+
+Both the blockquery and sourcequery keys are applicable only when used with `lw_addnodeparticipant`.
+
+
+```SQL
+SELECT lw_addnodeparticipant('navassa', $${
+  "schemaname":"navassa",						 
+  "tablename": "isolating_devices",
+  "primarykey":"device_id",
+  "geomcolumn": "g",
+  "feederid":"feedername",
+  "sourcequery": "1=2",
+  "blockquery": "status='OPEN'",
+  "phasecolumn": "phases",
+  "phasemap":{"ABC":"ABC","AB":"AB","AC":"AC","BC":"BC","A":"A","B":"B","C":"C"}
+}$$);
 ```
-lw_addedgeparticipant(lw_name text, lw_config json)
-```
+Once all the tables have been configured, the next step is to generate the shadow network. `lw_generate` is your friend.
 
-This will add a configuration directive for linear data (e.g. primary lines) The JSON blob must contain the following keys:
+The `lw_generate` functions takes one argument:
+- lw_name (text) - The name of the livewired schema.
 
-- schemaname - This is the name of the schema that the table is in. if schemaname is different from that of the livewire name (i.e. if when lw_initialise was run a new schema was created) then the data will be copied into the schema using CREATE TABLE LIKE semantics.
-
-- tablename - this is the name of the table.
-
-- primarykey - the column that is aprimary key or that you want to be a primary key.
-
-- geomcolumn - the column with the geometry.
-
-- labelcolumn - the column thatstores the name of the electrical source (usually the substation transformer ID)
-
-- phasecolumn - the column that stores the phase data
-
-- phasemap - a mapping of each of the possible 7 phase combinations to the data in the phasecolumn
-
-- feederid - This is the name of the feeder
-
-```
-lw_addnodeparticipant(lw_name text, lw_config json)
-```
-
-This will add a configuration directive for linear data (e.g. primary lines) The JSON blob must contain the following keys:
-
-- schemaname - This is the name of the schema that the table is in. if schemaname is different from that of the livewire name (i.e. if when lw_initialise was run a new schema was created) then the data will be copied into the schema using CREATE TABLE LIKE semantics.
-
-- tablename - this is the name of the table.
-
-- primarykey - the column that is aprimary key or that you want to be a primary key.
-
-- geomcolumn - the column with the geometry.
-
-- labelcolumn - the column thatstores the name of the electrical source (usually the substation transformer ID)
-
-- phasecolumn - the column that stores the phase data
-
-- phasemap - a mapping of each of the possible 7 phase combinations to the data in the phasecolumn
-
-- sourcequery - if this layer has the source (i.e. the substation transformer) then the where condition that satisfies a row to be a source. if the layer oly has source data, then specifying '1=1' would suffice. If the source is the substation transformer circuit breaker then 'devicetype=CB' might suffice.
-
-- blockquery - If this layer is to have devices that can block the flow of current, then this would be the where conditin to identify them.
-
-```
-lw_generate(lw_schema text)
-```
-This will prepare the 'shadow' network. The shadow network is the combination of all the layers in a given livewire.
-
-```
-lw_traceall(lw_schema text)
+```SQL
+SELECT lw_generate('navassa');
 ```
 
-This caches all possible routes. This operation is potential very expensive depending on number of sources and size of the network. It basically loops over all the sources and runs lw_tracesource().
+`lw_generate` may take a while to run depending on the size of the dataset.
+
+After the shadow network is `lw_generate`d, we populate the routing cache with `lw_traceall`.
+
+The `lw_traceall` functions takes one argument:
+- lw_name (text) - The name of the livewired schema.
+
+```SQL
+select lw_traceall('navassa_shadow');
+```
+
+[Navassa dataset]: <https://raw.githubusercontent.com/rhysallister/livewire/master/tests/navassa_data.sql>
 
