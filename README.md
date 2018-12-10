@@ -48,7 +48,7 @@ The `lw_initialise` functions takes the following arguments:
 - __livewire
 - schemaname
 
-For clarity, schemaname above is the name of the schema, so if you initialise a livewire in a schema name `powerflow`, there will be a table called `powerflow.powerflow` Clearly these table names are reserved in the context of any livewire enabled schema.
+For clarity, schemaname above is the name of the schema, so if you initialise a livewire in a schema named `powerflow`, there will be a table called `powerflow.powerflow` Clearly these table names are reserved in the context of any livewire enabled schema.
 
 So lets get the examples going with the [Navassa dataset]
 
@@ -109,7 +109,7 @@ The `lw_traceall` functions takes one argument:
 - lw_name (text) - The name of the livewired schema.
 
 ```SQL
-select lw_traceall('navassa_shadow');
+SELECT lw_traceall('navassa_shadow');
 ```
 
 [Navassa dataset]: <https://raw.githubusercontent.com/rhysallister/livewire/master/tests/navassa_data.sql>
