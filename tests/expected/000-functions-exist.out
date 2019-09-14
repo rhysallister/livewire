@@ -1,5 +1,5 @@
 \unset ECHO
-1..29
+1..30
 ok 1 - Check for the existense of the livewire extension
 ok 2 - Check for lw_addedgeparticipant
 ok 3 - Check for lw_addnodeparticipant
@@ -29,3 +29,4 @@ ok 26 - Check for lw_tracednstream - Multiple source and blockers variant
 ok 27 - Check for lw_tracednstream - Multiple source and blockers variant
 ok 28 - Check for lw_tracesource
 ok 29 - Check for lw_traceupstream
+ok 30 - Check for lw_version

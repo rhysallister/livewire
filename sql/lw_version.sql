@@ -6,9 +6,9 @@ CREATE OR REPLACE FUNCTION lw_version(
   
 $lw_version$
 
-SELECT 'Livewire 0.2. Build '
+SELECT 'LiveWire 0.4 Build '
 
 $lw_version$ LANGUAGE sql;
 
-COMMENT ON FUNCTION lw_version(IN lw_schema text) IS
-  'Returns the verison of livewire.';
+COMMENT ON FUNCTION lw_version() IS
+  'Returns the version of livewire.';

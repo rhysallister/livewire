@@ -3,7 +3,8 @@
 CREATE OR REPLACE FUNCTION lw_initialise(
   lw_schema text,
   lw_srid integer,
-  lw_tolerance float default 0)
+  lw_tolerance float default 0,
+  lw_trackorigin boolean default False)
 RETURNS SETOF void AS 
 
 $lw_initialise$
@@ -77,8 +78,8 @@ BEGIN
     WHERE tabletype = 'config' $$,lw_schema); 
   
   EXECUTE format($$ INSERT INTO %1$I.%1$I VALUES 
-    ('%1$I.%1$I','config', '{"lw_tolerance": "%2$s", "lw_srid" : "%3$s"}'::json) $$,
-  lw_schema, lw_tolerance, lw_srid);
+    ('%1$I.%1$I','config', '{"lw_tolerance": "%2$s", "lw_srid" : "%3$s", "lw_trackorigin": "%4$s"}'::json) $$,
+  lw_schema, lw_tolerance, lw_srid, lw_trackorigin);
 
 END;
 

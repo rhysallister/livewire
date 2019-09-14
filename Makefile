@@ -1,8 +1,8 @@
 EXTENSION = livewire          # the extension name
-DATA = livewire--0.2.0.sql
+DATA = livewire--0.4.0.sql
 
 release: 
-	cat sql/*.sql > livewire--0.2.0.sql
+	cat sql/*.sql > livewire--0.4.0.sql
 test:
 	pg_prove --verbose --pset tuples_only=1  $(TESTS)
 

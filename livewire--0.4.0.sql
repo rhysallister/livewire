@@ -564,7 +564,8 @@ COMMENT ON FUNCTION lw_generatenode is '';/*      Creates schema and livewire ba
 CREATE OR REPLACE FUNCTION lw_initialise(
   lw_schema text,
   lw_srid integer,
-  lw_tolerance float default 0)
+  lw_tolerance float default 0,
+  lw_trackorigin boolean default False)
 RETURNS SETOF void AS 
 
 $lw_initialise$
@@ -638,8 +639,8 @@ BEGIN
     WHERE tabletype = 'config' $$,lw_schema); 
   
   EXECUTE format($$ INSERT INTO %1$I.%1$I VALUES 
-    ('%1$I.%1$I','config', '{"lw_tolerance": "%2$s", "lw_srid" : "%3$s"}'::json) $$,
-  lw_schema, lw_tolerance, lw_srid);
+    ('%1$I.%1$I','config', '{"lw_tolerance": "%2$s", "lw_srid" : "%3$s", "lw_trackorigin": "%4$s"}'::json) $$,
+  lw_schema, lw_tolerance, lw_srid, lw_trackorigin);
 
 END;
 
@@ -807,6 +808,14 @@ BEGIN
     and  node_status <> 'BLOCK' 
    $$;
    execute format(qrytxt,lw_schema, tolerance, source, feedername); 
+
+  qrytxt := $$
+  update %1$I.__nodes n set feederid =  %4$L
+    from %1$I.__lines l where l.feederid =  %4$L
+  and n.status <> 'BLOCK' and st_3ddwithin(l.g,n.g,%2$s )
+   $$;
+  execute format(qrytxt,lw_schema, tolerance, source, feedername); 
+
   RAISE NOTICE 'Duration: %', clock_timestamp() - timer;
   end;
   
@@ -1239,4 +1248,17 @@ $lw_traceupstream$
 $lw_traceupstream$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) IS
-  'Returns an upstream geometric trace given a livewire name a lw_id FROM __nodes.';
+  'Returns an upstream geometric trace given a livewire name a lw_id FROM __nodes.';/*		Returns the version of livewire 		*/
+
+CREATE OR REPLACE FUNCTION lw_version(
+  OUT lw_version text
+  ) AS
+  
+$lw_version$
+
+SELECT 'LiveWire 0.4 Build '
+
+$lw_version$ LANGUAGE sql;
+
+COMMENT ON FUNCTION lw_version() IS
+  'Returns the version of livewire.';
