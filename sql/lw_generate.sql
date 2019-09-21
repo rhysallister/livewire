@@ -20,6 +20,11 @@ BEGIN
   
   EXECUTE format($$ TRUNCATE %1$I.__lines $$, lw_schema);
   EXECUTE format($$ TRUNCATE %1$I.__nodes $$, lw_schema);
+  EXECUTE format(
+    $$ ALTER TABLE %1$I.__lines ALTER COLUMN lw_id RESTART $$, lw_schema);
+  EXECUTE format(
+    $$ ALTER TABLE %1$I.__nodes ALTER COLUMN lw_id RESTART $$, lw_schema);
+
 
   FOR looprec IN EXECUTE format('SELECT * FROM   %1$I.%1$I' ,lw_schema) LOOP
     IF looprec.tabletype = 'EDGE' THEN

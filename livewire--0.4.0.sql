@@ -152,6 +152,11 @@ BEGIN
   
   EXECUTE format($$ TRUNCATE %1$I.__lines $$, lw_schema);
   EXECUTE format($$ TRUNCATE %1$I.__nodes $$, lw_schema);
+  EXECUTE format(
+    $$ ALTER TABLE %1$I.__lines ALTER COLUMN lw_id RESTART $$, lw_schema);
+  EXECUTE format(
+    $$ ALTER TABLE %1$I.__nodes ALTER COLUMN lw_id RESTART $$, lw_schema);
+
 
   FOR looprec IN EXECUTE format('SELECT * FROM   %1$I.%1$I' ,lw_schema) LOOP
     IF looprec.tabletype = 'EDGE' THEN
@@ -252,7 +257,8 @@ END;
 $lw_generate$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION lw_generate IS
-  'Populate the shadow tables';/*    Populate edge tables    */
+  'Populate the shadow tables';
+/*    Populate edge tables    */
 
 CREATE OR REPLACE FUNCTION lw_generateedge(
     lw_schema text,
@@ -635,6 +641,10 @@ BEGIN
   
   EXECUTE format($$ CREATE INDEX ON %1$I.__lines USING gist (g) $$,lw_schema);
   EXECUTE format($$ CREATE INDEX ON %1$I.__nodes USING gist (g) $$,lw_schema);
+  EXECUTE format($$ CREATE INDEX ON %1$I.__livewire USING gin (nodes) $$,
+    lw_schema);
+  EXECUTE format($$ CREATE INDEX ON %1$I.__livewire USING gin (edges) $$,
+    lw_schema);
   EXECUTE format($$ CREATE UNIQUE INDEX ON %1$I.%1$I (tabletype) 
     WHERE tabletype = 'config' $$,lw_schema); 
   
@@ -1047,7 +1057,7 @@ $lw_tracednstream$
     qrytxt := 'SELECT st_union(g) g FROM %1$I.__lines WHERE lw_id IN
                 (SELECT distinct(unnest(edges[(array_position(
                   nodes::int[], %2$s)):])) FROM %1$I.__livewire 
-              WHERE %2$s =ANY (nodes))';
+              WHERE ARRAY[%2$s]::bigint[] && (nodes))';
     EXECUTE format(qrytxt, lw_schema, lw_id) INTO g;
 
   END;
@@ -1240,7 +1250,7 @@ $lw_traceupstream$
     qrytxt := 'SELECT st_union(g) g FROM %1$I.__lines WHERE lw_id IN
                 (SELECT distinct(unnest(edges[:(array_position(
                   nodes::int[], %2$s)-1)])) FROM %1$I.__livewire 
-              WHERE %2$s =ANY (nodes))';
+              WHERE ARRAY[%2$s]::bigint[] && (nodes))';
     EXECUTE format(qrytxt, lw_schema, lw_id) INTO g;
 
   END;
@@ -1248,7 +1258,8 @@ $lw_traceupstream$
 $lw_traceupstream$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION lw_tracednstream(in lw_schema text, in lw_ids bigint[]) IS
-  'Returns an upstream geometric trace given a livewire name a lw_id FROM __nodes.';/*		Returns the version of livewire 		*/
+  'Returns an upstream geometric trace given a livewire name and an lw_id FROM __nodes.';
+/*		Returns the version of livewire 		*/
 
 CREATE OR REPLACE FUNCTION lw_version(
   OUT lw_version text

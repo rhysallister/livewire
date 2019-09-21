@@ -74,6 +74,10 @@ BEGIN
   
   EXECUTE format($$ CREATE INDEX ON %1$I.__lines USING gist (g) $$,lw_schema);
   EXECUTE format($$ CREATE INDEX ON %1$I.__nodes USING gist (g) $$,lw_schema);
+  EXECUTE format($$ CREATE INDEX ON %1$I.__livewire USING gin (nodes) $$,
+    lw_schema);
+  EXECUTE format($$ CREATE INDEX ON %1$I.__livewire USING gin (edges) $$,
+    lw_schema);
   EXECUTE format($$ CREATE UNIQUE INDEX ON %1$I.%1$I (tabletype) 
     WHERE tabletype = 'config' $$,lw_schema); 
   
