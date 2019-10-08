@@ -13,13 +13,14 @@ DECLARE
 BEGIN
   -- Find all end nodes in a given livewire
   
-  qrytxt := 'SELECT array_agg(lw_id) FROM
+  qrytxt := $$SELECT array_agg(lw_id) ||
+  (SELECT array_agg(distinct lw_id) from %1$I.__nodes where status = 'BLOCK') FROM
 		(SELECT source lw_id FROM 
 		(SELECT lw_id, source FROM %1$I.__lines 
 		UNION 
 		SELECT lw_id, target FROM %1$I.__lines ) as lines
 		group by source  
-		having count(lw_id) = 1) as lw_ids';
+		having count(lw_id) = 1) as lw_ids$$;
   
   execute format(qrytxt,lw_schema) into myarray;
 

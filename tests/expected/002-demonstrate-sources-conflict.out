@@ -1,0 +1,7 @@
+\unset ECHO
+1..3
+NOTICE:  schema "livewire_testing" already exists, skipping
+ok 1 - Confirm that after lw_initialise the correct row is in the config table
+ok 2 - Confirm that the config table has three rows
+NOTICE:  Verify single source directive
+ok 3 - threw One or more sources can reach one or more sources

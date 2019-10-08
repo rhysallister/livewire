@@ -61,7 +61,7 @@ BEGIN
     and  node_status <> 'BLOCK' 
    $$;
    execute format(qrytxt,lw_schema, tolerance, source, feedername); 
-
+  --  Update the nodes with the appropriate feederid 
   qrytxt := $$
   update %1$I.__nodes n set feederid =  %4$L
     from %1$I.__lines l where l.feederid =  %4$L
