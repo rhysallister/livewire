@@ -13,7 +13,7 @@ DECLARE
 BEGIN
   -- Find all end nodes in a given livewire
   
-  qrytxt := $$SELECT array_agg(lw_id) ||
+  qrytxt := $$SELECT array_agg(lw_id::bigint) ||
   (SELECT array_agg(distinct lw_id) from %1$I.__nodes where status = 'BLOCK') FROM
 		(SELECT source lw_id FROM 
 		(SELECT lw_id, source FROM %1$I.__lines 

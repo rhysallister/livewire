@@ -5,6 +5,7 @@
 \pset tuples_only true
 \pset pager
 
+\set SHOW_CONTEXT never
 -- Revert all changes on failure.
 \set ON_ERROR_ROLLBACK 1
 \set ON_ERROR_STOP true

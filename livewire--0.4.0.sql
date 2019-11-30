@@ -114,13 +114,14 @@ DECLARE
 BEGIN
   -- Find all end nodes in a given livewire
   
-  qrytxt := 'SELECT array_agg(lw_id) FROM
+  qrytxt := $$SELECT array_agg(lw_id::bigint) ||
+  (SELECT array_agg(distinct lw_id) from %1$I.__nodes where status = 'BLOCK') FROM
 		(SELECT source lw_id FROM 
 		(SELECT lw_id, source FROM %1$I.__lines 
 		UNION 
 		SELECT lw_id, target FROM %1$I.__lines ) as lines
 		group by source  
-		having count(lw_id) = 1) as lw_ids';
+		having count(lw_id) = 1) as lw_ids$$;
   
   execute format(qrytxt,lw_schema) into myarray;
 
@@ -818,7 +819,7 @@ BEGIN
     and  node_status <> 'BLOCK' 
    $$;
    execute format(qrytxt,lw_schema, tolerance, source, feedername); 
-
+  --  Update the nodes with the appropriate feederid 
   qrytxt := $$
   update %1$I.__nodes n set feederid =  %4$L
     from %1$I.__lines l where l.feederid =  %4$L
@@ -1030,11 +1031,11 @@ $lw_traceall$
   qrytxt := $$ SELECT row_number() over (), count(lw_id) over (), lw_id
 		FROM %I.__nodes WHERE status = 'SOURCE'$$;
   for looprec in EXECUTE(format(qrytxt, lw_schema)) LOOP
-                RAISE NOTICE 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
+                RAISE INFO 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
                 timer := clock_timestamp();
                 perform lw_redirect(lw_schema,looprec.lw_id::int);
                 perform lw_tracesource(lw_schema, looprec.lw_id::int, False);
-		RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
+		RAISE INFO '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
   END LOOP;
 
 
@@ -1044,7 +1045,8 @@ END;
 $lw_traceall$ LANGUAGE plpgsql;
 
 COMMENT ON FUNCTION lw_traceall(in lw_schema text) IS 
-  'Initiates a trace to populate the livewire shadow table';CREATE FUNCTION lw_tracednstream(
+  'Initiates a trace to populate the livewire shadow table';
+CREATE FUNCTION lw_tracednstream(
   IN lw_schema text,
   IN lw_id bigint,
   OUT g geometry) AS

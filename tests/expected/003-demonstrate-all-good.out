@@ -1,6 +1,5 @@
 \unset ECHO
-1..4
+1..3
 ok 1 - Confirm that after lw_initialise the correct row is in the config table
 ok 2 - Confirm that the config table has three rows
-ok 3 - Confirm that there are 4 source nodes after running lw_generate
-ok 4 - threw One or more sources can reach one or more sources
+ok 3 - All should be well here.

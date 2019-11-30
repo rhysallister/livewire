@@ -80,11 +80,12 @@ SELECT results_eq(
   'Confirm that the config table has three rows'
   );
 
+SET client_min_messages TO 'ERROR';
 SELECT lw_generate('livewire_testing');
 
-SELECT throws_ok(
+SELECT lives_ok(
   $$SELECT lw_traceall('livewire_testing');$$,
-  'One or more sources can reach one or more sources'
+  'All should be well here.'
   );
 
 SELECT * FROM finish();
