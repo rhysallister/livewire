@@ -27,7 +27,7 @@ BEGIN
 
   /*    check that table exists   */
   PERFORM * FROM pg_catalog.pg_class pc
-    JOIN pg_catalog.pg_namespace pn on pc.relnamespace=pn.oid
+    JOIN pg_catalog.pg_namespace pn ON pc.relnamespace=pn.oid
     WHERE nspname = ei->>'schemaname'
     AND relname = ei->>'tablename';
   IF NOT FOUND THEN
@@ -36,9 +36,9 @@ BEGIN
 
   /*    check that table has a geometry column    */
   PERFORM * FROM pg_catalog.pg_attribute pa
-    JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
-    JOIN pg_catalog.pg_class on attrelid = oid
-    JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
+    JOIN pg_catalog.pg_type pt ON pa.atttypid = pt.oid
+    JOIN pg_catalog.pg_class pc ON attrelid = pc.oid
+    JOIN pg_catalog.pg_namespace pn ON relnamespace = pn.oid
     WHERE nspname = ei->>'schemaname' AND relname = ei->>'tablename' 
     AND attname = ei->>'geomcolumn' AND typname = 'geometry';
   IF NOT FOUND THEN
@@ -47,9 +47,9 @@ BEGIN
 
   /*    check that phase column exists    */
   PERFORM * FROM pg_catalog.pg_attribute pa
-    JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
-    JOIN pg_catalog.pg_class pc on attrelid = pc.oid
-    JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
+    JOIN pg_catalog.pg_type pt ON pa.atttypid = pt.oid
+    JOIN pg_catalog.pg_class pc ON attrelid = pc.oid
+    JOIN pg_catalog.pg_namespace pn ON relnamespace = pn.oid
     WHERE nspname = ei->>'schemaname'
     AND relname = ei->>'tablename' AND attname = ei->>'phasecolumn';
   IF NOT FOUND THEN
@@ -58,9 +58,9 @@ BEGIN
 
   /*    check that feederid column exists    */
   PERFORM * FROM pg_catalog.pg_attribute pa
-    JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
-    JOIN pg_catalog.pg_class pc on attrelid = pc.oid
-    JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
+    JOIN pg_catalog.pg_type pt ON pa.atttypid = pt.oid
+    JOIN pg_catalog.pg_class pc ON attrelid = pc.oid
+    JOIN pg_catalog.pg_namespace pn ON relnamespace = pn.oid
     WHERE nspname = ei->>'schemaname'
     AND relname = ei->>'tablename' AND attname = ei->>'feederid';
   IF NOT FOUND THEN

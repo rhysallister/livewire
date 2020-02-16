@@ -36,7 +36,7 @@ BEGIN
   /*    check that table has a geometry column    */
   PERFORM * FROM pg_catalog.pg_attribute pa
     JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
-    JOIN pg_catalog.pg_class on attrelid = oid
+    JOIN pg_catalog.pg_class pc on attrelid = pc.oid
     JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
     WHERE nspname = ni->>'schemaname' and relname = ni->>'tablename' 
     and attname = ni->>'geomcolumn' and typname = 'geometry';

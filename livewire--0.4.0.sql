@@ -288,7 +288,7 @@ BEGIN
 
   /*    check that table exists   */
   PERFORM * FROM pg_catalog.pg_class pc
-    JOIN pg_catalog.pg_namespace pn on pc.relnamespace=pn.oid
+    JOIN pg_catalog.pg_namespace pn ON pc.relnamespace=pn.oid
     WHERE nspname = ei->>'schemaname'
     AND relname = ei->>'tablename';
   IF NOT FOUND THEN
@@ -297,9 +297,9 @@ BEGIN
 
   /*    check that table has a geometry column    */
   PERFORM * FROM pg_catalog.pg_attribute pa
-    JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
-    JOIN pg_catalog.pg_class on attrelid = oid
-    JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
+    JOIN pg_catalog.pg_type pt ON pa.atttypid = pt.oid
+    JOIN pg_catalog.pg_class pc ON attrelid = pc.oid
+    JOIN pg_catalog.pg_namespace pn ON relnamespace = pn.oid
     WHERE nspname = ei->>'schemaname' AND relname = ei->>'tablename' 
     AND attname = ei->>'geomcolumn' AND typname = 'geometry';
   IF NOT FOUND THEN
@@ -308,9 +308,9 @@ BEGIN
 
   /*    check that phase column exists    */
   PERFORM * FROM pg_catalog.pg_attribute pa
-    JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
-    JOIN pg_catalog.pg_class pc on attrelid = pc.oid
-    JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
+    JOIN pg_catalog.pg_type pt ON pa.atttypid = pt.oid
+    JOIN pg_catalog.pg_class pc ON attrelid = pc.oid
+    JOIN pg_catalog.pg_namespace pn ON relnamespace = pn.oid
     WHERE nspname = ei->>'schemaname'
     AND relname = ei->>'tablename' AND attname = ei->>'phasecolumn';
   IF NOT FOUND THEN
@@ -319,9 +319,9 @@ BEGIN
 
   /*    check that feederid column exists    */
   PERFORM * FROM pg_catalog.pg_attribute pa
-    JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
-    JOIN pg_catalog.pg_class pc on attrelid = pc.oid
-    JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
+    JOIN pg_catalog.pg_type pt ON pa.atttypid = pt.oid
+    JOIN pg_catalog.pg_class pc ON attrelid = pc.oid
+    JOIN pg_catalog.pg_namespace pn ON relnamespace = pn.oid
     WHERE nspname = ei->>'schemaname'
     AND relname = ei->>'tablename' AND attname = ei->>'feederid';
   IF NOT FOUND THEN
@@ -418,7 +418,8 @@ EXECUTE format(
 END;
 $lw_generateedge$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_generateedge IS '';/*    Populate node tables	 */
+COMMENT ON FUNCTION lw_generateedge IS '';
+/*    Populate node tables	 */
 
 CREATE OR REPLACE FUNCTION lw_generatenode(
     lw_schema text,
@@ -456,7 +457,7 @@ BEGIN
   /*    check that table has a geometry column    */
   PERFORM * FROM pg_catalog.pg_attribute pa
     JOIN pg_catalog.pg_type pt on pa.atttypid = pt.oid
-    JOIN pg_catalog.pg_class on attrelid = oid
+    JOIN pg_catalog.pg_class pc on attrelid = pc.oid
     JOIN pg_catalog.pg_namespace pn on relnamespace = pn.oid
     WHERE nspname = ni->>'schemaname' and relname = ni->>'tablename' 
     and attname = ni->>'geomcolumn' and typname = 'geometry';
@@ -566,7 +567,8 @@ BEGIN
 END;
 $lw_generatenode$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION lw_generatenode is '';/*      Creates schema and livewire base tables      */
+COMMENT ON FUNCTION lw_generatenode is '';
+/*      Creates schema and livewire base tables      */
 
 CREATE OR REPLACE FUNCTION lw_initialise(
   lw_schema text,
