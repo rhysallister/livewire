@@ -80,7 +80,6 @@ SELECT results_eq(
   'Confirm that the config table has three rows'
   );
 
-SET client_min_messages TO 'ERROR';
 SELECT lw_generate('livewire_testing');
 
 SELECT lives_ok(

@@ -33,11 +33,11 @@ $lw_traceall$
   qrytxt := $$ SELECT row_number() over (), count(lw_id) over (), lw_id
 		FROM %I.__nodes WHERE status = 'SOURCE'$$;
   for looprec in EXECUTE(format(qrytxt, lw_schema)) LOOP
-                RAISE INFO 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
+                RAISE NOTICE 'SOURCE: % | % of %', looprec.lw_id,looprec.row_number, looprec.count;
                 timer := clock_timestamp();
                 perform lw_redirect(lw_schema,looprec.lw_id::int);
                 perform lw_tracesource(lw_schema, looprec.lw_id::int, False);
-		RAISE INFO '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
+		RAISE NOTICE '% | Elapsed time is %', clock_timestamp() - timer, clock_timestamp() - starttime;
   END LOOP;
 
 

@@ -17,7 +17,7 @@ SELECT has_function('public', 'lw_endnodes', ARRAY['text'], 'Check for lw_endnod
 SELECT has_function('public', 'lw_generateedge', ARRAY['text', 'text'], 'Check for lw_generatedege');
 SELECT has_function('public', 'lw_generatenode', ARRAY['text', 'text'], 'Check for lw_generatenode');
 SELECT has_function('public', 'lw_generate', ARRAY['text'], 'Check for lw_generate');
-SELECT has_function('public', 'lw_initialise', ARRAY['text', 'integer', 'double precision', 'boolean'], 'Check for lw_initialise');
+SELECT has_function('public', 'lw_initialise', ARRAY['text', 'integer', 'double precision', 'boolean', 'text'], 'Check for lw_initialise');
 SELECT has_function('public', 'lw_nodedelete', 'Check for lw_nodedelete');
 SELECT has_function('public', 'lw_nodeinsert', 'Check for lw_nodeinsert');
 SELECT has_function('public', 'lw_nodeupdate', 'Check for lw_nodeupdate');

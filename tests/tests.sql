@@ -13,10 +13,14 @@
 BEGIN;
 
  SET client_min_messages TO 'ERROR';
+/*
+ CREATE EXTENSION IF NOT EXISTS pgtap;
  CREATE EXTENSION IF NOT EXISTS postgis;
  CREATE EXTENSION IF NOT EXISTS pgrouting;
  CREATE EXTENSION IF NOT EXISTS livewire;
- RESET client_min_messages;
+--  RESET client_min_messages;
 
 -- Load the TAP functions.
-\i tests/pgtap.sql
+--\i tests/pgtap.sql
+
+*/
