@@ -7,7 +7,6 @@ test:
 	pg_prove --verbose --pset tuples_only=1  $(TESTS)
 
 containertest:
-	touch _containertest
 	podman run --rm --name livewiretest --detach \
 		--env POSTGRES_HOST_AUTH_METHOD=trust \
 		--volume ./:/livewire --workdir /livewire \
