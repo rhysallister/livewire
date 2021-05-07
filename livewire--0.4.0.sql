@@ -574,7 +574,8 @@ CREATE OR REPLACE FUNCTION lw_initialise(
   lw_schema text,
   lw_srid integer,
   lw_tolerance float default 0,
-  lw_trackorigin boolean default False)
+  lw_trackorigin boolean default False,
+  lw_description text default NULL)
 RETURNS SETOF void AS 
 
 $lw_initialise$
@@ -588,7 +589,11 @@ BEGIN
     RAISE NOTICE 'LiveWire works best when line ends are coincident.';
     RAISE NOTICE 'Your mileage may vary.';
   END IF;
-  
+
+  IF lw_description IS NULL THEN
+    lw_description := format('%1$s is a livewire with srid of %2$s',lw_schema, lw_srid);
+  END IF;
+
   EXECUTE format($$ CREATE SCHEMA IF NOT EXISTS %1$I; $$,lw_schema);
   
   EXECUTE format($$ CREATE TABLE %1$I.__lines

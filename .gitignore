@@ -3,3 +3,7 @@ tests/results/
 tests/regression.diffs
 tests/regression.out
 *.swp
+.cache
+.dbus
+.local
+lamu
